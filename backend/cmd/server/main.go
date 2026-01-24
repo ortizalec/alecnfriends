@@ -19,7 +19,7 @@ func main() {
 
 	dbPath := os.Getenv("DATABASE_PATH")
 	if dbPath == "" {
-		dbPath = "./data/altech.db"
+		dbPath = "./data/alecnfriends.db"
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")

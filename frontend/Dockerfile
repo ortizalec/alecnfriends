@@ -15,16 +15,14 @@ COPY . .
 # Build the app
 RUN npm run build
 
-# Runtime stage
-FROM nginx:alpine
+# Output stage - copies files to shared volume then sleeps
+FROM alpine:latest
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+WORKDIR /app
 
 # Copy built assets from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /app/dist
 
-# Expose port
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+# Copy files to the shared volume on startup, then keep container alive
+# (Container needs to stay running for docker-compose depends_on to work)
+CMD ["sh", "-c", "cp -r /app/dist/* /srv/ && echo 'Frontend files copied to /srv' && tail -f /dev/null"]

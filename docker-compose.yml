@@ -10,6 +10,8 @@ services:
       - DATABASE_PATH=/app/data/alecnfriends.db
     volumes:
       - backend-data:/app/data
+    ports:
+      - "8080:8080"
     networks:
       - app-network
     healthcheck:
@@ -22,9 +24,22 @@ services:
     build: ./frontend
     container_name: alecnfriends-frontend
     restart: unless-stopped
+    volumes:
+      - frontend-dist:/srv
+    networks:
+      - app-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: alecnfriends-caddy
+    restart: unless-stopped
     ports:
       - "80:80"
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile
+      - frontend-dist:/srv:ro
     depends_on:
+      - frontend
       - backend
     networks:
       - app-network
@@ -35,3 +50,4 @@ networks:
 
 volumes:
   backend-data:
+  frontend-dist:

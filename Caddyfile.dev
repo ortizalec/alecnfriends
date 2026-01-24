@@ -1,4 +1,4 @@
-alecnfriends.com, www.alecnfriends.com {
+:80 {
     # Proxy API requests to backend
     handle /api/* {
         reverse_proxy backend:8080
@@ -8,10 +8,8 @@ alecnfriends.com, www.alecnfriends.com {
     handle {
         root * /srv
 
-        # Enable gzip compression
         encode gzip
 
-        # Try the requested file, then fall back to index.html for SPA routing
         try_files {path} /index.html
 
         file_server

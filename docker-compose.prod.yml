@@ -17,8 +17,8 @@ services:
     build: ./frontend
     container_name: alecnfriends-frontend
     restart: unless-stopped
-    depends_on:
-      - backend
+    volumes:
+      - frontend-dist:/srv
     networks:
       - app-network
 
@@ -31,10 +31,12 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+      - frontend-dist:/srv:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
       - frontend
+      - backend
     networks:
       - app-network
 
@@ -44,5 +46,6 @@ networks:
 
 volumes:
   backend-data:
+  frontend-dist:
   caddy-data:
   caddy-config:
