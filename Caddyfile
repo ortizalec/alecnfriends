@@ -1,0 +1,23 @@
+#alecnfriends.com {
+    # Proxy frontend requests
+#    reverse_proxy frontend:80
+
+    # Proxy API requests to backend
+#    handle /api/* {
+#       reverse_proxy backend:8080
+#    }
+#}
+
+#www.alecnfriends.com {
+#    redir https://alecnfriends.com{uri} permanent
+#}
+
+alecnfriends.com, www.alecnfriends.com {
+        handle /api/* {
+          reverse_proxy backend:8080
+        }
+
+        handle {
+          reverse_proxy frontend:80
+        }
+}

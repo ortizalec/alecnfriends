@@ -1,0 +1,23 @@
+# Dependencies
+vendor/
+
+# Build output
+server
+*.exe
+
+# Data
+data/
+*.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Docs
+*.md
