@@ -76,6 +76,9 @@ jobs:
             FRONTEND_URL=https://alecnfriends.com
             EOF
 
+            # Stop existing containers
+            docker compose -f docker-compose.prod.yml down
+
             # Rebuild and restart the containers
             # --build: rebuild images if Dockerfiles changed
             # -d: run in background (detached)
