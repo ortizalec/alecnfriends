@@ -1,0 +1,85 @@
+# This workflow runs when code is pushed to the main branch.
+# It builds and tests the code, then deploys to the production server.
+
+name: Deploy
+
+# TRIGGER: When does this workflow run?
+# - Only on pushes to the 'main' branch
+# - You can also add 'workflow_dispatch' to allow manual triggers from GitHub UI
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # JOB 1: BUILD AND TEST
+  # This job runs on GitHub's servers (free tier: 2000 mins/month)
+  # It verifies the code compiles before we deploy anything
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the code from the repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Go
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      # Step 3: Build the backend to verify it compiles
+      - name: Build backend
+        run: cd backend && go build ./cmd/server
+
+      # Step 4: Install Node.js
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Step 5: Install frontend dependencies and build
+      # 'npm ci' is like 'npm install' but faster and stricter for CI
+      - name: Build frontend
+        run: cd frontend && npm ci && npm run build
+
+  # JOB 2: DEPLOY
+  # This job SSHs into your server and pulls the latest code
+  # It only runs if the 'test' job passes (needs: test)
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      # This action handles SSH connection and runs commands on your server
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          # These values come from GitHub Secrets (Settings > Secrets > Actions)
+          host: ${{ secrets.DROPLET_IP }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+          # Commands to run on the server:
+          script: |
+            # Go to the app directory
+            cd /opt/alecnfriends
+
+            # Pull latest code from GitHub
+            git pull origin main
+
+            # Recreate the .env file with secrets
+            # (This ensures secrets aren't stored in the repo)
+            cat > .env << EOF
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            DATABASE_PATH=/app/data/alecnfriends.db
+            FRONTEND_URL=https://alecnfriends.com
+            EOF
+
+            # Rebuild and restart the containers
+            # --build: rebuild images if Dockerfiles changed
+            # -d: run in background (detached)
+            docker compose -f docker-compose.prod.yml up -d --build
+
+            # Optional: clean up old Docker images to save disk space
+            docker image prune -f
