@@ -3,7 +3,7 @@ version: '3.8'
 services:
   backend:
     build: ./backend
-    container_name: alecnfriends-backend
+    container_name: backend
     restart: unless-stopped
     environment:
       - JWT_SECRET=${JWT_SECRET}
@@ -15,7 +15,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: alecnfriends-frontend
+    container_name: frontend
     restart: unless-stopped
     volumes:
       - frontend-dist:/srv
@@ -24,7 +24,7 @@ services:
 
   caddy:
     image: caddy:2-alpine
-    container_name: alecnfriends-caddy
+    container_name: caddy
     restart: unless-stopped
     ports:
       - "80:80"
