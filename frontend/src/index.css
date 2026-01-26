@@ -1911,6 +1911,23 @@ h1, h2, h3 {
   padding: 0.625rem 1.5rem;
 }
 
+/* Console message area */
+.battleship-console {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(100, 180, 255, 0.2);
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 0.8125rem;
+  color: #4ade80;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Battleship alerts */
 .battleship-page .alert {
   background: rgba(20, 50, 80, 0.6);

@@ -451,7 +451,6 @@ export default function BattleshipGame() {
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
-        {message && <div className="alert alert-success">{message}</div>}
 
         {/* Enemy board (top) */}
         <div className="battleship-grids">
@@ -493,10 +492,11 @@ export default function BattleshipGame() {
         {/* Actions bar */}
         {phase === 'active' && (
           <div className="battleship-actions">
-            <div className="actions-left">
-              <button className="btn btn-secondary" onClick={handleResign}>
-                Resign
-              </button>
+            <button className="btn btn-secondary" onClick={handleResign}>
+              Resign
+            </button>
+            <div className="battleship-console">
+              {message || (isYourTurn ? 'Select a target' : 'Waiting for opponent...')}
             </div>
             <button
               className="btn btn-primary btn-play"
@@ -510,6 +510,9 @@ export default function BattleshipGame() {
 
         {phase === 'completed' && (
           <div className="battleship-actions">
+            <div className="battleship-console">
+              {game.winner_id === user?.id ? 'Victory!' : 'Defeated'}
+            </div>
             <button className="btn btn-primary" onClick={() => navigate('/battleship')}>
               Back to Games
             </button>
