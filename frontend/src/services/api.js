@@ -278,6 +278,72 @@ class ApiService {
     }
     return data
   }
+
+  // Battleship API
+  async getBattleshipGames() {
+    const response = await this.request('/battleship/games')
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Failed to get games')
+    }
+    return response.json()
+  }
+
+  async createBattleshipGame(opponentId) {
+    const response = await this.request('/battleship/games', {
+      method: 'POST',
+      body: JSON.stringify({ opponent_id: opponentId }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create game')
+    }
+    return data
+  }
+
+  async getBattleshipGame(gameId) {
+    const response = await this.request(`/battleship/games/${gameId}`)
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Failed to get game')
+    }
+    return response.json()
+  }
+
+  async placeBattleshipShips(gameId, ships) {
+    const response = await this.request(`/battleship/games/${gameId}/ships`, {
+      method: 'POST',
+      body: JSON.stringify({ ships }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to place ships')
+    }
+    return data
+  }
+
+  async fireBattleshipShot(gameId, row, col) {
+    const response = await this.request(`/battleship/games/${gameId}/fire`, {
+      method: 'POST',
+      body: JSON.stringify({ row, col }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fire shot')
+    }
+    return data
+  }
+
+  async resignBattleshipGame(gameId) {
+    const response = await this.request(`/battleship/games/${gameId}/resign`, {
+      method: 'POST',
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to resign game')
+    }
+    return data
+  }
 }
 
 export const api = new ApiService()

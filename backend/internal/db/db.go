@@ -114,6 +114,32 @@ func migrate(db *sql.DB) error {
 			FOREIGN KEY (game_id) REFERENCES scrabble_games(id) ON DELETE CASCADE
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_scrabble_moves_game ON scrabble_moves(game_id)`,
+		// Battleship game tables
+		`CREATE TABLE IF NOT EXISTS battleship_games (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			player1_id INTEGER NOT NULL,
+			player2_id INTEGER NOT NULL,
+			current_turn INTEGER NOT NULL,
+			status TEXT NOT NULL DEFAULT 'setup',
+			winner_id INTEGER,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (player2_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_battleship_games_player1 ON battleship_games(player1_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_battleship_games_player2 ON battleship_games(player2_id)`,
+		`CREATE TABLE IF NOT EXISTS battleship_boards (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			game_id INTEGER NOT NULL,
+			user_id INTEGER NOT NULL,
+			ships TEXT NOT NULL DEFAULT '[]',
+			shots TEXT NOT NULL DEFAULT '[]',
+			ships_ready INTEGER DEFAULT 0,
+			FOREIGN KEY (game_id) REFERENCES battleship_games(id) ON DELETE CASCADE,
+			UNIQUE(game_id, user_id)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_battleship_boards_game ON battleship_boards(game_id)`,
 	}
 
 	for _, m := range migrations {

@@ -5,6 +5,8 @@ import Register from './pages/Register'
 import Games from './pages/Games'
 import ScrabbleHome from './pages/ScrabbleHome'
 import ScrabbleGame from './pages/ScrabbleGame'
+import BattleshipHome from './pages/BattleshipHome'
+import BattleshipGame from './pages/BattleshipGame'
 import Friends from './pages/Friends'
 import Profile from './pages/Profile'
 
@@ -48,6 +50,22 @@ function App() {
         element={
           <ProtectedRoute>
             <ScrabbleGame />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/battleship"
+        element={
+          <ProtectedRoute>
+            <BattleshipHome />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/battleship/:id"
+        element={
+          <ProtectedRoute>
+            <BattleshipGame />
           </ProtectedRoute>
         }
       />

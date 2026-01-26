@@ -6,6 +6,7 @@ import { api } from '../services/api'
 export default function Games() {
   const navigate = useNavigate()
   const [scrabbleCount, setScrabbleCount] = useState(0)
+  const [battleshipCount, setBattleshipCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -14,9 +15,14 @@ export default function Games() {
 
   const loadCounts = async () => {
     try {
-      const gamesData = await api.getScrabbleGames()
-      const activeCount = (gamesData.your_turn?.length || 0) + (gamesData.their_turn?.length || 0)
-      setScrabbleCount(activeCount)
+      const [scrabbleData, battleshipData] = await Promise.all([
+        api.getScrabbleGames(),
+        api.getBattleshipGames().catch(() => ({ your_turn: [], their_turn: [] })),
+      ])
+      const scrabbleActive = (scrabbleData.your_turn?.length || 0) + (scrabbleData.their_turn?.length || 0)
+      const battleshipActive = (battleshipData.your_turn?.length || 0) + (battleshipData.their_turn?.length || 0)
+      setScrabbleCount(scrabbleActive)
+      setBattleshipCount(battleshipActive)
     } catch {
       // Ignore errors for counts
     } finally {
@@ -57,7 +63,30 @@ export default function Games() {
             </span>
           </button>
 
-          {/* More games can be added here */}
+          <button
+            className="game-hub-card"
+            onClick={() => navigate('/battleship')}
+          >
+            <div className="game-hub-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="2" />
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+                <circle cx="12" cy="12" r="9" />
+              </svg>
+            </div>
+            <div className="game-hub-info">
+              <h2 className="game-hub-title">Battleship</h2>
+              <p className="game-hub-description">Naval strategy game</p>
+            </div>
+            {!loading && battleshipCount > 0 && (
+              <span className="game-hub-badge">{battleshipCount}</span>
+            )}
+            <span className="game-hub-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </span>
+          </button>
         </div>
       </main>
     </div>

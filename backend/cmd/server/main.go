@@ -72,6 +72,14 @@ func main() {
 	mux.HandleFunc("GET /api/scrabble/games/{id}/bag", middleware.Auth(jwtSecret, h.GetTileBag))
 	mux.HandleFunc("GET /api/scrabble/games/{id}/history", middleware.Auth(jwtSecret, h.GetGameHistory))
 
+	// Battleship routes
+	mux.HandleFunc("GET /api/battleship/games", middleware.Auth(jwtSecret, h.GetBattleshipGames))
+	mux.HandleFunc("POST /api/battleship/games", middleware.Auth(jwtSecret, h.CreateBattleshipGame))
+	mux.HandleFunc("GET /api/battleship/games/{id}", middleware.Auth(jwtSecret, h.GetBattleshipGame))
+	mux.HandleFunc("POST /api/battleship/games/{id}/ships", middleware.Auth(jwtSecret, h.PlaceBattleshipShips))
+	mux.HandleFunc("POST /api/battleship/games/{id}/fire", middleware.Auth(jwtSecret, h.FireBattleshipShot))
+	mux.HandleFunc("POST /api/battleship/games/{id}/resign", middleware.Auth(jwtSecret, h.ResignBattleshipGame))
+
 	// Health check
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
