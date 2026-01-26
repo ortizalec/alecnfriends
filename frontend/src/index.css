@@ -1438,7 +1438,8 @@ h1, h2, h3 {
   flex-direction: column;
   height: calc(100vh - 53px);
   height: calc(100dvh - 53px);
-  overflow: hidden;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Battleship header bar */
@@ -1518,11 +1519,10 @@ h1, h2, h3 {
 }
 
 .battleship-setup-grid {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 0;
+  flex-shrink: 0;
 }
 
 .grid-section {
@@ -1552,6 +1552,9 @@ h1, h2, h3 {
   box-shadow:
     0 0 20px rgba(100, 180, 255, 0.1),
     inset 0 0 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .battleship-row {
@@ -1568,11 +1571,17 @@ h1, h2, h3 {
   cursor: pointer;
   transition: all 0.15s ease;
   position: relative;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
-.battleship-cell:hover {
-  background: rgba(40, 80, 120, 0.6);
-  border-color: rgba(100, 180, 255, 0.4);
+/* Only apply hover on devices that support it (not touch) */
+@media (hover: hover) {
+  .battleship-cell:hover {
+    background: rgba(40, 80, 120, 0.6);
+    border-color: rgba(100, 180, 255, 0.4);
+  }
 }
 
 /* Cell states */
@@ -1895,10 +1904,20 @@ h1, h2, h3 {
 
   .battleship-scores {
     font-size: 0.8125rem;
+    gap: 0.5rem;
   }
 
   .battleship-actions {
     padding: 0.625rem 0.75rem;
+  }
+
+  .battleship-ship-selector {
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .ship-selector-header {
+    margin-bottom: 0.5rem;
   }
 
   .ship-btn {
@@ -1912,6 +1931,19 @@ h1, h2, h3 {
   .ship-dot {
     width: 10px;
     height: 10px;
+  }
+
+  .ship-list {
+    gap: 0.25rem;
+  }
+
+  .placed-ships {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .grid-label {
+    margin-bottom: 0.25rem;
   }
 }
 
@@ -1928,5 +1960,23 @@ h1, h2, h3 {
 
   .battleship-row {
     gap: 1px;
+  }
+
+  .ship-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .ship-name {
+    font-size: 0.75rem;
+  }
+
+  .battleship-scores {
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+  }
+
+  .player-status {
+    font-size: 0.75rem;
   }
 }
