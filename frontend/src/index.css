@@ -1408,3 +1408,525 @@ h1, h2, h3 {
     height: 5px;
   }
 }
+
+/* ============================================
+   BATTLESHIP GAME STYLES
+   ============================================ */
+
+.battleship-page {
+  background: linear-gradient(180deg, #0a1628 0%, #0d2137 50%, #0a1628 100%);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.battleship-page .header {
+  background: rgba(10, 22, 40, 0.95);
+  border-bottom: 1px solid rgba(100, 180, 255, 0.2);
+}
+
+.battleship-page .header-logo {
+  color: #64b4ff;
+}
+
+.battleship-page .hamburger span {
+  background: #64b4ff;
+}
+
+.battleship-container {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 53px);
+  height: calc(100dvh - 53px);
+  overflow: hidden;
+}
+
+/* Battleship header bar */
+.battleship-header {
+  text-align: center;
+  padding: 0.75rem 1rem;
+  background: rgba(20, 50, 80, 0.6);
+  border: 1px solid rgba(100, 180, 255, 0.3);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.battleship-header h2 {
+  color: #64b4ff;
+  font-size: 1.25rem;
+  margin: 0 0 0.25rem;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.battleship-header .text-muted {
+  color: rgba(100, 180, 255, 0.6);
+  font-size: 0.875rem;
+}
+
+.battleship-scores {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9375rem;
+}
+
+.player-status {
+  color: rgba(100, 180, 255, 0.7);
+  font-weight: 500;
+}
+
+.player-status.current-turn {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.status-divider {
+  color: rgba(100, 180, 255, 0.4);
+}
+
+.turn-indicator {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #4ade80;
+}
+
+.game-result {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #fbbf24;
+}
+
+/* Grids container */
+.battleship-grids {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  overflow: auto;
+}
+
+.battleship-setup-grid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+}
+
+.grid-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.grid-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(100, 180, 255, 0.5);
+  margin-bottom: 0.375rem;
+}
+
+/* Battleship grid */
+.battleship-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(20, 50, 80, 0.4);
+  border: 1px solid rgba(100, 180, 255, 0.3);
+  border-radius: 4px;
+  box-shadow:
+    0 0 20px rgba(100, 180, 255, 0.1),
+    inset 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
+.battleship-row {
+  display: flex;
+  gap: 2px;
+}
+
+.battleship-cell {
+  width: 28px;
+  height: 28px;
+  background: rgba(10, 30, 60, 0.8);
+  border: 1px solid rgba(100, 180, 255, 0.15);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.battleship-cell:hover {
+  background: rgba(40, 80, 120, 0.6);
+  border-color: rgba(100, 180, 255, 0.4);
+}
+
+/* Cell states */
+.battleship-cell.ship {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(100, 180, 255, 0.3),
+    rgba(100, 180, 255, 0.3) 3px,
+    rgba(50, 100, 150, 0.3) 3px,
+    rgba(50, 100, 150, 0.3) 6px
+  );
+  border-color: rgba(100, 180, 255, 0.4);
+}
+
+.battleship-cell.hit {
+  background: radial-gradient(circle, #ef4444 30%, rgba(239, 68, 68, 0.3) 70%);
+  border-color: #ef4444;
+}
+
+.battleship-cell.hit::after {
+  content: '×';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.battleship-cell.miss {
+  background: rgba(10, 30, 60, 0.8);
+  border-color: rgba(100, 180, 255, 0.2);
+}
+
+.battleship-cell.miss::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: rgba(100, 180, 255, 0.4);
+  border-radius: 50%;
+}
+
+.battleship-cell.targeted {
+  background: rgba(251, 191, 36, 0.3);
+  border-color: #fbbf24;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+.battleship-cell.targeted::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fbbf24;
+  border-radius: 50%;
+}
+
+/* Setup phase hover states */
+.battleship-cell.hover-valid {
+  background: rgba(74, 222, 128, 0.3);
+  border-color: #4ade80;
+}
+
+.battleship-cell.hover-invalid {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: #ef4444;
+}
+
+/* Enemy grid - clickable during your turn */
+.enemy-grid .battleship-cell {
+  cursor: crosshair;
+}
+
+/* Ship selector */
+.battleship-ship-selector {
+  background: rgba(20, 50, 80, 0.4);
+  border: 1px solid rgba(100, 180, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+  width: 100%;
+  max-width: 360px;
+}
+
+.ship-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  color: rgba(100, 180, 255, 0.7);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ship-selector-header .btn {
+  background: rgba(100, 180, 255, 0.1);
+  border-color: rgba(100, 180, 255, 0.3);
+  color: #64b4ff;
+  padding: 0.375rem 0.75rem;
+  min-height: 32px;
+  font-size: 0.75rem;
+}
+
+.ship-selector-header .btn:hover {
+  background: rgba(100, 180, 255, 0.2);
+  border-color: rgba(100, 180, 255, 0.5);
+  color: #64b4ff;
+}
+
+.ship-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.ship-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  background: rgba(10, 30, 60, 0.6);
+  border: 1px solid rgba(100, 180, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.ship-btn:hover {
+  background: rgba(30, 60, 100, 0.6);
+  border-color: rgba(100, 180, 255, 0.4);
+}
+
+.ship-btn.selected {
+  background: rgba(74, 222, 128, 0.2);
+  border-color: #4ade80;
+}
+
+.ship-name {
+  color: #64b4ff;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.ship-size {
+  display: flex;
+  gap: 3px;
+}
+
+.ship-dot {
+  width: 12px;
+  height: 12px;
+  background: rgba(100, 180, 255, 0.4);
+  border: 1px solid rgba(100, 180, 255, 0.6);
+  border-radius: 2px;
+}
+
+.ship-btn.selected .ship-dot {
+  background: rgba(74, 222, 128, 0.4);
+  border-color: #4ade80;
+}
+
+.placed-ships {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(100, 180, 255, 0.15);
+}
+
+.placed-label {
+  color: rgba(100, 180, 255, 0.5);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  width: 100%;
+  margin-bottom: 0.25rem;
+}
+
+.placed-ship-btn {
+  background: rgba(100, 180, 255, 0.15);
+  border: 1px solid rgba(100, 180, 255, 0.3);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  color: #64b4ff;
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.placed-ship-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Actions bar */
+.battleship-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(20, 50, 80, 0.6);
+  border: 1px solid rgba(100, 180, 255, 0.2);
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  flex-shrink: 0;
+}
+
+.battleship-actions .btn-secondary {
+  background: rgba(100, 180, 255, 0.1);
+  border-color: rgba(100, 180, 255, 0.3);
+  color: #64b4ff;
+}
+
+.battleship-actions .btn-secondary:hover {
+  background: rgba(100, 180, 255, 0.2);
+  border-color: rgba(100, 180, 255, 0.5);
+  color: #64b4ff;
+}
+
+.battleship-actions .btn-primary {
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  border: none;
+  color: #0a1628;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.battleship-actions .btn-primary:hover {
+  background: linear-gradient(180deg, #5eeb94 0%, #34d369 100%);
+}
+
+.battleship-actions .btn-primary:disabled {
+  background: rgba(100, 180, 255, 0.2);
+  color: rgba(100, 180, 255, 0.4);
+}
+
+.battleship-actions .btn-play {
+  min-width: 100px;
+  padding: 0.625rem 1.5rem;
+}
+
+/* Battleship alerts */
+.battleship-page .alert {
+  background: rgba(20, 50, 80, 0.6);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.battleship-page .alert-error {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.battleship-page .alert-success {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.4);
+  color: #86efac;
+}
+
+/* Radar scan line animation */
+.battleship-grid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(100, 180, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: radarScan 3s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes radarScan {
+  0% { top: 0; opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  .battleship-container {
+    padding: 0.5rem;
+  }
+
+  .battleship-cell {
+    width: 24px;
+    height: 24px;
+  }
+
+  .battleship-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .battleship-header h2 {
+    font-size: 1rem;
+  }
+
+  .battleship-scores {
+    font-size: 0.8125rem;
+  }
+
+  .battleship-actions {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .ship-btn {
+    padding: 0.5rem 0.625rem;
+  }
+
+  .ship-name {
+    font-size: 0.8125rem;
+  }
+
+  .ship-dot {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (max-width: 340px) {
+  .battleship-cell {
+    width: 22px;
+    height: 22px;
+  }
+
+  .battleship-grid {
+    gap: 1px;
+    padding: 3px;
+  }
+
+  .battleship-row {
+    gap: 1px;
+  }
+}

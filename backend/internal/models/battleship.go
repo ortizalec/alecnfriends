@@ -62,13 +62,14 @@ type FireShotRequest struct {
 }
 
 type BattleshipGameResponse struct {
-	Game       *BattleshipGame `json:"game"`
-	MyBoard    [][]string      `json:"my_board"`    // Full view of own board
-	EnemyBoard [][]string      `json:"enemy_board"` // Only shows hits/misses
-	MyShips    []Ship          `json:"my_ships"`
-	IsYourTurn bool            `json:"is_your_turn"`
-	ShipsReady bool            `json:"ships_ready"`
-	Phase      string          `json:"phase"` // setup, active, completed
+	Game                *BattleshipGame `json:"game"`
+	MyBoard             [][]string      `json:"my_board"`              // Full view of own board
+	EnemyBoard          [][]string      `json:"enemy_board"`           // Only shows hits/misses
+	MyShips             []Ship          `json:"my_ships"`
+	IsYourTurn          bool            `json:"is_your_turn"`
+	ShipsReady          bool            `json:"ships_ready"`
+	Phase               string          `json:"phase"`                  // setup, active, completed
+	EnemyShipsRemaining int             `json:"enemy_ships_remaining"`  // How many enemy ships are still afloat
 }
 
 type BattleshipGamesListResponse struct {

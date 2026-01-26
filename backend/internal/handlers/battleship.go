@@ -140,13 +140,27 @@ func (h *Handler) GetBattleshipGame(w http.ResponseWriter, r *http.Request) {
 	shotsReceived, _ := battleship.ShotsFromJSON(myBoard.Shots)
 
 	var shotsFired []models.Shot
+	var enemyShips []models.Ship
 	if opponentBoard != nil {
 		shotsFired, _ = battleship.ShotsFromJSON(opponentBoard.Shots)
+		enemyShips, _ = battleship.ShipsFromJSON(opponentBoard.Ships)
 	}
 
 	// Build board views
 	myBoardView := battleship.BuildMyBoard(myShips, shotsReceived)
 	enemyBoardView := battleship.BuildEnemyBoard(shotsFired)
+
+	// Calculate enemy ships remaining (not sunk)
+	enemyShipsRemaining := 0
+	for _, ship := range enemyShips {
+		if ship.Hits < ship.Size {
+			enemyShipsRemaining++
+		}
+	}
+	// If enemy hasn't placed ships yet, show 5 (all ships)
+	if len(enemyShips) == 0 && game.Status != "setup" {
+		enemyShipsRemaining = 5
+	}
 
 	// Determine if it's my turn
 	isYourTurn := false
@@ -157,13 +171,14 @@ func (h *Handler) GetBattleshipGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, models.BattleshipGameResponse{
-		Game:       game,
-		MyBoard:    myBoardView,
-		EnemyBoard: enemyBoardView,
-		MyShips:    myShips,
-		IsYourTurn: isYourTurn,
-		ShipsReady: myBoard.ShipsReady,
-		Phase:      game.Status,
+		Game:                game,
+		MyBoard:             myBoardView,
+		EnemyBoard:          enemyBoardView,
+		MyShips:             myShips,
+		IsYourTurn:          isYourTurn,
+		ShipsReady:          myBoard.ShipsReady,
+		Phase:               game.Status,
+		EnemyShipsRemaining: enemyShipsRemaining,
 	}, http.StatusOK)
 }
 
