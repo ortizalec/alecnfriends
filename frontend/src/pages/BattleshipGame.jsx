@@ -433,17 +433,12 @@ export default function BattleshipGame() {
             <span className={`player-status ${!isYourTurn && phase === 'active' ? 'current-turn' : ''}`}>
               {opponent?.username}: {enemyShipsRemaining} ships
             </span>
+            {phase === 'completed' && (
+              <span className="game-result-inline">
+                {game.winner_id === user?.id ? 'You Won!' : 'You Lost'}
+              </span>
+            )}
           </div>
-          {phase === 'active' && (
-            <div className="turn-indicator">
-              {isYourTurn ? 'Your Turn' : "Opponent's Turn"}
-            </div>
-          )}
-          {phase === 'completed' && (
-            <div className="game-result">
-              {game.winner_id === user?.id ? 'You Won!' : 'You Lost'}
-            </div>
-          )}
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
