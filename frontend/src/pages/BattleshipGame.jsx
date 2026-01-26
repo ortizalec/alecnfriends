@@ -38,6 +38,7 @@ export default function BattleshipGame() {
 
   // Firing state
   const [selectedTarget, setSelectedTarget] = useState(null) // { row, col }
+  const [isFiring, setIsFiring] = useState(false)
 
   const loadGame = useCallback(async () => {
     try {
@@ -185,9 +186,14 @@ export default function BattleshipGame() {
   }
 
   const handleFire = async () => {
-    if (!selectedTarget) return
+    if (!selectedTarget || isFiring) return
 
     setError('')
+    setIsFiring(true)
+
+    // Wait for bomb animation to complete
+    await new Promise(resolve => setTimeout(resolve, 600))
+
     try {
       const result = await api.fireBattleshipShot(id, selectedTarget.row, selectedTarget.col)
 
@@ -206,10 +212,12 @@ export default function BattleshipGame() {
       }
 
       setSelectedTarget(null)
+      setIsFiring(false)
       await loadGame()
       setTimeout(() => setMessage(''), 3000)
     } catch (err) {
       setError(err.message)
+      setIsFiring(false)
     }
   }
 
@@ -235,6 +243,7 @@ export default function BattleshipGame() {
 
     if (isEnemy && selectedTarget?.row === row && selectedTarget?.col === col) {
       classes.push('targeted')
+      if (isFiring) classes.push('firing')
     }
 
     return classes.join(' ')
@@ -492,9 +501,9 @@ export default function BattleshipGame() {
             <button
               className="btn btn-primary btn-play"
               onClick={handleFire}
-              disabled={!isYourTurn || !selectedTarget}
+              disabled={!isYourTurn || !selectedTarget || isFiring}
             >
-              Fire!
+              {isFiring ? 'Firing...' : 'Fire!'}
             </button>
           </div>
         )}

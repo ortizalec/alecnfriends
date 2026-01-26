@@ -1641,6 +1641,83 @@ h1, h2, h3 {
   border-radius: 50%;
 }
 
+/* Bomb drop animation */
+.battleship-cell.firing {
+  overflow: visible;
+}
+
+.battleship-cell.firing::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 14px;
+  background: linear-gradient(180deg, #374151 0%, #1f2937 50%, #ef4444 100%);
+  border-radius: 50% 50% 40% 40%;
+  animation: bombDrop 0.6s ease-in forwards;
+  z-index: 100;
+}
+
+.battleship-cell.firing::before {
+  animation: crosshairPulse 0.6s ease-out forwards;
+}
+
+@keyframes bombDrop {
+  0% {
+    top: -60px;
+    opacity: 1;
+    transform: translateX(-50%) scale(0.8);
+  }
+  70% {
+    top: 30%;
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  85% {
+    top: 50%;
+    transform: translateX(-50%) scale(1.2);
+  }
+  100% {
+    top: 50%;
+    opacity: 0;
+    transform: translateX(-50%) scale(2);
+  }
+}
+
+@keyframes crosshairPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Impact flash */
+.battleship-cell.firing {
+  animation: impactFlash 0.6s ease-out forwards;
+}
+
+@keyframes impactFlash {
+  0%, 70% {
+    background: rgba(251, 191, 36, 0.3);
+  }
+  85% {
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    background: rgba(251, 191, 36, 0.3);
+  }
+}
+
 /* Setup phase hover states */
 .battleship-cell.hover-valid {
   background: rgba(74, 222, 128, 0.3);
