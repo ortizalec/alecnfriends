@@ -69,6 +69,8 @@ func main() {
 	mux.HandleFunc("POST /api/scrabble/games/{id}/pass", middleware.Auth(jwtSecret, h.PassScrabbleTurn))
 	mux.HandleFunc("POST /api/scrabble/games/{id}/exchange", middleware.Auth(jwtSecret, h.ExchangeScrabbleTiles))
 	mux.HandleFunc("POST /api/scrabble/games/{id}/resign", middleware.Auth(jwtSecret, h.ResignScrabbleGame))
+	mux.HandleFunc("GET /api/scrabble/games/{id}/bag", middleware.Auth(jwtSecret, h.GetTileBag))
+	mux.HandleFunc("GET /api/scrabble/games/{id}/history", middleware.Auth(jwtSecret, h.GetGameHistory))
 
 	// Health check
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {

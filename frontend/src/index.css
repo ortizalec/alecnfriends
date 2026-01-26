@@ -807,12 +807,18 @@ h1, h2, h3 {
   flex-shrink: 0;
 }
 
-.scrabble-header-scores {
+.scrabble-header-bag-label {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+}
+
+.scrabble-header-scores {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .header-score.you {
@@ -877,37 +883,34 @@ h1, h2, h3 {
 .scrabble-board-wrapper {
   width: 100%;
   height: 100%;
-  overflow: scroll;
+  overflow: auto;
   border-radius: 8px;
   background: #f0ebe3;
   border: 1px solid #d4cfc4;
   cursor: grab;
   -webkit-overflow-scrolling: touch;
   touch-action: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .scrabble-board-wrapper:active {
   cursor: grabbing;
 }
 
-.scrabble-board-wrapper.zoomed-out {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.scrabble-board-wrapper.zoomed-out .scrabble-board {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+/* Scaler wrapper - sizes to the scaled canvas for proper centering */
+.scrabble-board-scaler {
+  flex-shrink: 0;
+  position: relative;
 }
 
 .scrabble-board {
   display: block;
   cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 /* Preview */
@@ -1193,4 +1196,216 @@ h1, h2, h3 {
   border-radius: 4px;
   pointer-events: none;
   opacity: 0.8;
+}
+
+/* Actions bar layout */
+.scrabble-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #e0dcd4;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+.actions-left {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Play button */
+.btn-play {
+  min-width: 100px;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.625rem 1.5rem;
+}
+
+/* Dropup menu container */
+.dropup-container {
+  position: relative;
+}
+
+.dropup-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 140px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 50;
+}
+
+.dropup-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: none;
+  background: #fff;
+  text-align: left;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: #121212;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.dropup-menu button:hover {
+  background: #f7f7f7;
+}
+
+.dropup-menu button:not(:last-child) {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dropup-menu button.danger {
+  color: #c62828;
+}
+
+.dropup-menu button.danger:hover {
+  background: #fff5f5;
+}
+
+/* Current turn indicator */
+.header-score.current-turn {
+  position: relative;
+  color:  #f7c213;
+  font-weight: 800;
+}
+
+/* Tile bag modal */
+.tile-bag-modal {
+  max-width: 360px;
+}
+
+.tile-bag-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.tile-bag-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: #f8f4eb;
+  border: 1px solid #e0dcd4;
+  border-radius: 4px;
+}
+
+.tile-bag-letter {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.tile-bag-count {
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: 600;
+}
+
+/* History modal */
+.history-modal {
+  max-width: 440px;
+}
+
+.history-list {
+  max-height: 50vh;
+  overflow-y: auto;
+  margin: 1rem 0;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-move-number {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.history-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.history-player {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.history-type {
+  font-size: 0.8125rem;
+  color: #666;
+}
+
+.history-score {
+  font-weight: 700;
+  color: #2e7d32;
+  font-size: 0.9375rem;
+}
+
+/* Responsive adjustments for lower bar */
+@media (max-width: 400px) {
+  .scrabble-actions {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .actions-left {
+    gap: 0.375rem;
+  }
+
+  .btn-play {
+    min-width: 80px;
+    padding: 0.5rem 1rem;
+  }
+
+  .dropup-menu {
+    min-width: 120px;
+  }
+
+  .dropup-menu button {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.875rem;
+  }
+
+  .tile-bag-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .header-score.current-turn::before {
+    left: -10px;
+    width: 5px;
+    height: 5px;
+  }
 }

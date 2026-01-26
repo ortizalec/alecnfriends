@@ -260,6 +260,24 @@ class ApiService {
     }
     return data
   }
+
+  async getTileBag(gameId) {
+    const response = await this.request(`/scrabble/games/${gameId}/bag`)
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get tile bag')
+    }
+    return data
+  }
+
+  async getGameHistory(gameId) {
+    const response = await this.request(`/scrabble/games/${gameId}/history`)
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to get game history')
+    }
+    return data
+  }
 }
 
 export const api = new ApiService()

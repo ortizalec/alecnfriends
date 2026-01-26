@@ -557,6 +557,128 @@ func (h *Handler) ResignScrabbleGame(w http.ResponseWriter, r *http.Request) {
 	}, http.StatusOK)
 }
 
+func (h *Handler) GetTileBag(w http.ResponseWriter, r *http.Request) {
+	userCtx := middleware.GetUser(r)
+	if userCtx == nil {
+		jsonError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	gameID := extractGameID(r)
+	if gameID == 0 {
+		jsonError(w, "invalid game ID", http.StatusBadRequest)
+		return
+	}
+
+	game, err := db.GetScrabbleGame(h.db, gameID)
+	if err == db.ErrGameNotFound {
+		jsonError(w, "game not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		jsonError(w, "failed to get game", http.StatusInternalServerError)
+		return
+	}
+
+	// Check user is a player
+	if game.Player1ID != userCtx.UserID && game.Player2ID != userCtx.UserID {
+		jsonError(w, "not a player in this game", http.StatusForbidden)
+		return
+	}
+
+	// Parse tile bag and aggregate counts
+	tileBag, _ := scrabble.TileBagFromJSON(game.TileBag)
+
+	// Count tiles by letter
+	counts := make(map[string]int)
+	for _, tile := range tileBag {
+		letter := tile.Letter
+		if letter == " " {
+			letter = "?"
+		}
+		counts[letter]++
+	}
+
+	jsonResponse(w, map[string]interface{}{
+		"tiles": counts,
+		"total": len(tileBag),
+	}, http.StatusOK)
+}
+
+func (h *Handler) GetGameHistory(w http.ResponseWriter, r *http.Request) {
+	userCtx := middleware.GetUser(r)
+	if userCtx == nil {
+		jsonError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	gameID := extractGameID(r)
+	if gameID == 0 {
+		jsonError(w, "invalid game ID", http.StatusBadRequest)
+		return
+	}
+
+	game, err := db.GetScrabbleGame(h.db, gameID)
+	if err == db.ErrGameNotFound {
+		jsonError(w, "game not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		jsonError(w, "failed to get game", http.StatusInternalServerError)
+		return
+	}
+
+	// Check user is a player
+	if game.Player1ID != userCtx.UserID && game.Player2ID != userCtx.UserID {
+		jsonError(w, "not a player in this game", http.StatusForbidden)
+		return
+	}
+
+	moves, err := db.GetScrabbleMoves(h.db, gameID)
+	if err != nil {
+		jsonError(w, "failed to get moves", http.StatusInternalServerError)
+		return
+	}
+
+	// Enrich with player names
+	type HistoryItem struct {
+		MoveNumber  int      `json:"move_number"`
+		PlayerName  string   `json:"player_name"`
+		MoveType    string   `json:"move_type"`
+		WordsFormed []string `json:"words_formed,omitempty"`
+		Score       int      `json:"score"`
+		CreatedAt   string   `json:"created_at"`
+	}
+
+	history := make([]HistoryItem, len(moves))
+	for i, move := range moves {
+		playerName := ""
+		if move.UserID == game.Player1ID && game.Player1 != nil {
+			playerName = game.Player1.Username
+		} else if game.Player2 != nil {
+			playerName = game.Player2.Username
+		}
+
+		var words []string
+		if move.WordsFormed != "" {
+			json.Unmarshal([]byte(move.WordsFormed), &words)
+		}
+
+		history[i] = HistoryItem{
+			MoveNumber:  i + 1,
+			PlayerName:  playerName,
+			MoveType:    move.MoveType,
+			WordsFormed: words,
+			Score:       move.Score,
+			CreatedAt:   move.CreatedAt.Format("Jan 2, 3:04 PM"),
+		}
+	}
+
+	jsonResponse(w, map[string]interface{}{
+		"history": history,
+	}, http.StatusOK)
+}
+
 func extractGameID(r *http.Request) int64 {
 	path := r.URL.Path
 	parts := strings.Split(path, "/")
