@@ -80,6 +80,13 @@ export default function BattleshipHome() {
     const isWinner = game.winner_id === user?.id
     const isLoser = game.winner_id && game.winner_id !== user?.id
     const isYourTurn = game.current_turn === user?.id && game.status === 'active'
+    const isSetup = game.status === 'setup'
+
+    const getStatusText = () => {
+      if (isSetup) return 'Setup Phase'
+      if (game.status === 'active') return 'In Progress'
+      return ''
+    }
 
     return (
       <li
@@ -88,13 +95,15 @@ export default function BattleshipHome() {
       >
         <div className="game-card-main">
           <span className="game-card-opponent">{opponent?.username}</span>
-          <span className="game-card-score">{game.status === 'active' ? 'In Progress' : ''}</span>
+          <span className="game-card-score">{getStatusText()}</span>
         </div>
         <div className="game-card-status">
-          {showStatus && game.status !== 'active' ? (
+          {showStatus && game.status === 'completed' ? (
             <span className={`status-badge ${isWinner ? 'won' : isLoser ? 'lost' : 'draw'}`}>
               {isWinner ? 'Won' : isLoser ? 'Lost' : 'Draw'}
             </span>
+          ) : isSetup ? (
+            <span className="status-badge your-turn">Setup</span>
           ) : game.status === 'active' && (
             <span className={`status-badge ${isYourTurn ? 'your-turn' : 'waiting'}`}>
               {isYourTurn ? 'Your turn' : 'Waiting'}
