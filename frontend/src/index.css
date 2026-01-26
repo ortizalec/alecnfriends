@@ -774,14 +774,14 @@ h1, h2, h3 {
    ============================================ */
 
 .scrabble-page {
-  background-color: #faf8f5;
+  background-color: #ffffff;
   overflow: hidden;
 }
 
 .scrabble-page .header {
   flex-shrink: 0;
-  background: #faf8f5;
-  border-bottom-color: #e0dcd4;
+  background: #ffffff;
+  border-bottom-color: #e8e8e8;
 }
 
 .scrabble-container {
@@ -798,8 +798,8 @@ h1, h2, h3 {
   align-items: center;
   justify-content: space-between;
   padding: 0.625rem 1rem;
-  background: #fff;
-  border: 1px solid #e0dcd4;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
   border-radius: 8px;
   margin-bottom: 0.5rem;
   flex-wrap: wrap;
@@ -885,32 +885,35 @@ h1, h2, h3 {
   height: 100%;
   overflow: auto;
   border-radius: 8px;
-  background: #f0ebe3;
-  border: 1px solid #d4cfc4;
-  cursor: grab;
+  background: #f3f3f3;
+  border: 1px solid #e0e0e0;
   -webkit-overflow-scrolling: touch;
-  touch-action: none;
+}
+
+/* Zoomed out - fit board to container, centered */
+.scrabble-board-wrapper.zoomed-out {
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
 }
 
-.scrabble-board-wrapper:active {
-  cursor: grabbing;
+.scrabble-board-wrapper.zoomed-out .scrabble-board {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
-/* Scaler wrapper - sizes to the scaled canvas for proper centering */
-.scrabble-board-scaler {
-  flex-shrink: 0;
-  position: relative;
+/* Zoomed in - 1:1 scale, scrollable */
+.scrabble-board-wrapper.zoomed-in {
+  overflow: auto;
 }
 
 .scrabble-board {
   display: block;
   cursor: pointer;
-  position: absolute;
-  top: 0;
-  left: 0;
 }
 
 /* Preview */
@@ -950,74 +953,70 @@ h1, h2, h3 {
   display: flex;
   justify-content: center;
   gap: 0.5rem;
-  padding: .5rem;
-  background: #fff;
-  border: 1px solid #e0dcd4;
-  border-radius: 8px;
+  padding: 0.75rem;
+  background: #2c4a6b;
+  border-radius: 12px;
   margin-bottom: 0.5rem;
   flex-wrap: wrap;
   flex-shrink: 0;
 }
 
 .rack-tile {
-  width: 44px;
-  height: 48px;
-  border: 1px solid #c4bfb4;
-  border-radius: 4px;
-  background: #f8f4eb;
+  width: 48px;
+  height: 52px;
+  border: none;
+  border-radius: 8px 0 8px 0;
+  background: #f5f0e1;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s;
-  box-shadow: 0 2px 0 #c4bfb4;
+  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   font-family: Georgia, 'Times New Roman', serif;
 }
 
 .rack-tile:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-  border-color: #121212;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 
 .rack-tile.selected {
-  background: #ffd54f;
-  border-color: #f9a825;
+  background: #d4e8d4;
   transform: translateY(-4px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
 
 .rack-tile:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
 .rack-tile.blank {
-  background: #fff;
-  border-style: dashed;
+  background: #f5f0e1;
 }
 
 .blank-indicator {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #999;
+  color: #2c4a6b;
 }
 
 .tile-letter {
-  font-size: 1.5rem;
+  font-size: 1.625rem;
   font-weight: 700;
-  color: #121212;
+  color: #2c4a6b;
 }
 
 .tile-value {
   font-size: 0.625rem;
   font-weight: 700;
-  color: #666;
+  color: #2c4a6b;
   position: absolute;
-  bottom: 2px;
-  right: 4px;
+  bottom: 4px;
+  right: 5px;
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
 }
 

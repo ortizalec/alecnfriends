@@ -26,25 +26,25 @@ const BONUS_SQUARES = [
   [4, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 4],
 ]
 
-// NYT-inspired color palette - softer, easier on eyes
+// NYT Games color palette
 const COLORS = {
-  boardBg: '#f0ebe3',      // warm cream background
-  gridLine: '#e0dbd3',     // very subtle grid lines
-  normal: '#f0ebe3',       // empty squares - same as background for uniformity
-  doubleLetter: '#d4e4ed', // very soft blue
-  tripleLetter: '#7faec4', // medium blue
-  doubleWord: '#f2d4d4',   // very soft pink
-  tripleWord: '#d4735c',   // muted terracotta
-  center: '#f2d4d4',       // same as double word
-  tile: '#fffef8',         // placed tiles - warm white
+  boardBg: '#f3f3f3',      // light gray board background
+  gridLine: '#e8e8e8',     // subtle grid lines
+  normal: '#ffffff',       // empty squares - white
+  doubleLetter: '#b8d4e8', // soft blue
+  tripleLetter: '#8b7bb5', // muted purple
+  doubleWord: '#e8c4c4',   // soft pink
+  tripleWord: '#d4a843',   // gold/mustard
+  center: '#f3f3f3',       // center square
+  tile: '#f5f0e1',         // placed tiles - cream/beige
   tileShadow: '#d4cfc4',   // tile shadow
   tileBorder: '#c4bfb4',   // tile border
-  newTile: '#ffe082',      // newly placed tiles - softer yellow
-  newTileBorder: '#e6c157',
+  newTile: '#c8e6c9',      // newly placed tiles - soft green
+  newTileBorder: '#81c784',
   lastMoveTile: '#c8e6c9', // last move tiles - soft green
   lastMoveBorder: '#81c784',
-  text: '#2c2c2c',         // softer black
-  textMuted: '#787878',    // muted text
+  text: '#1a1a1a',         // dark text
+  textMuted: '#666666',    // muted text
 }
 
 const BONUS_COLORS = {
@@ -71,7 +71,6 @@ export default function ScrabbleGame() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canvasRef = useRef(null)
-  const wrapperRef = useRef(null)
 
   const [game, setGame] = useState(null)
   const [rack, setRack] = useState([])
@@ -101,24 +100,9 @@ export default function ScrabbleGame() {
   const [gameHistory, setGameHistory] = useState(null)
   const moreMenuRef = useRef(null)
 
-  // Pan state
-  const [isPanning, setIsPanning] = useState(false)
-  const panStartRef = useRef({ x: 0, y: 0, scrollX: 0, scrollY: 0 })
-
-  // Zoom state
-  const [zoomScale, setZoomScale] = useState(1)
+  // Zoom state: true = zoomed in (1:1), false = zoomed out (fit to screen)
+  const [isZoomedIn, setIsZoomedIn] = useState(false)
   const lastTapRef = useRef(0)
-  const pinchStartRef = useRef(null)
-  const MAX_ZOOM = 1.3
-
-  // Calculate min zoom to fit board in container
-  const getMinZoom = useCallback(() => {
-    if (!wrapperRef.current) return 0.5
-    const wrapper = wrapperRef.current
-    const canvasSize = BOARD_SIZE * TILE_SIZE + BOARD_PADDING * 2
-    const minScale = Math.min(wrapper.clientWidth / canvasSize, wrapper.clientHeight / canvasSize)
-    return Math.max(0.3, minScale - 0.02) // slight margin
-  }, [])
 
   const loadGame = useCallback(async () => {
     try {
@@ -176,28 +160,6 @@ export default function ScrabbleGame() {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [loadGame])
 
-  // Center the board when at min zoom or on initial load
-  const centerBoard = useCallback((targetScale) => {
-    if (!wrapperRef.current) return
-    const wrapper = wrapperRef.current
-    const canvasSize = BOARD_SIZE * TILE_SIZE + BOARD_PADDING * 2
-    const scale = targetScale ?? zoomScale
-    const scaledSize = canvasSize * scale
-    const scrollX = (scaledSize - wrapper.clientWidth) / 2
-    const scrollY = (scaledSize - wrapper.clientHeight) / 2
-    wrapper.scrollLeft = Math.max(0, scrollX)
-    wrapper.scrollTop = Math.max(0, scrollY)
-  }, [zoomScale])
-
-  // Center the board when zoom changes or on initial load
-  useEffect(() => {
-    if (wrapperRef.current && game) {
-      // Use requestAnimationFrame to ensure DOM has updated
-      requestAnimationFrame(() => {
-        centerBoard(zoomScale)
-      })
-    }
-  }, [game, zoomScale])
 
   // Click outside handler for More menu
   useEffect(() => {
@@ -249,44 +211,193 @@ export default function ScrabbleGame() {
     ctx.fillStyle = COLORS.boardBg
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+    // Helper to draw square with top-left and bottom-right corners rounded
+    const drawSquare = (sx, sy, size, radius) => {
+      ctx.beginPath()
+      ctx.roundRect(sx, sy, size, size, [radius, 0, radius, 0])
+    }
+
+    // Draw empty board squares
     for (let row = 0; row < BOARD_SIZE; row++) {
       for (let col = 0; col < BOARD_SIZE; col++) {
         const x = BOARD_PADDING + col * TILE_SIZE
         const y = BOARD_PADDING + row * TILE_SIZE
         const bonus = BONUS_SQUARES[row][col]
 
-        // Draw square
+        // Draw square with diagonal rounded corners
         ctx.fillStyle = BONUS_COLORS[bonus]
-        ctx.fillRect(x + 1, y + 1, TILE_SIZE - 2, TILE_SIZE - 2)
+        drawSquare(x + 1, y + 1, TILE_SIZE - 2, 8)
+        ctx.fill()
 
         // Draw thin dark border on all squares
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)'
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
         ctx.lineWidth = 0.5
-        ctx.strokeRect(x + 1, y + 1, TILE_SIZE - 2, TILE_SIZE - 2)
+        drawSquare(x + 1, y + 1, TILE_SIZE - 2, 8)
+        ctx.stroke()
 
-        // Draw bonus label
-        if (bonus > 0 && (!board[row] || !board[row][col]?.letter)) {
+        // Draw bonus label (only if no tile)
+        const hasExistingTile = board[row]?.[col]?.letter
+        const hasNewTile = placedTiles.some(t => t.row === row && t.col === col)
+        if (bonus > 0 && !hasExistingTile && !hasNewTile) {
           ctx.fillStyle = bonus === 4 || bonus === 2 ? '#fff' : COLORS.text
           ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillText(BONUS_LABELS[bonus], x + TILE_SIZE / 2, y + TILE_SIZE / 2)
         }
-
-        // Draw placed tiles
-        if (board[row] && board[row][col]?.letter) {
-          const isBlank = board[row][col].value === 0 && board[row][col].letter !== ' '
-          const isLastMove = lastMoveTiles.some(t => t.row === row && t.col === col)
-          drawTile(ctx, x, y, board[row][col].letter, board[row][col].value, false, isBlank, isLastMove)
-        }
       }
     }
 
-    // Draw newly placed tiles
+    // Collect all tile data with positions
+    const allTiles = []
+    for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let col = 0; col < BOARD_SIZE; col++) {
+        if (board[row]?.[col]?.letter) {
+          const isBlank = board[row][col].value === 0 && board[row][col].letter !== ' '
+          const isLastMove = lastMoveTiles.some(t => t.row === row && t.col === col)
+          allTiles.push({
+            row, col,
+            letter: board[row][col].letter,
+            value: board[row][col].value,
+            isNew: false,
+            isBlank,
+            isLastMove
+          })
+        }
+      }
+    }
     for (const tile of placedTiles) {
-      const x = BOARD_PADDING + tile.col * TILE_SIZE
-      const y = BOARD_PADDING + tile.row * TILE_SIZE
-      drawTile(ctx, x, y, tile.displayLetter, tile.isBlank ? 0 : getTileValue(tile.displayLetter), true, tile.isBlank, false)
+      allTiles.push({
+        row: tile.row,
+        col: tile.col,
+        letter: tile.displayLetter,
+        value: tile.isBlank ? 0 : getTileValue(tile.displayLetter),
+        isNew: true,
+        isBlank: tile.isBlank,
+        isLastMove: false
+      })
+    }
+
+    // Create a set of tile positions for quick lookup
+    const tileSet = new Set(allTiles.map(t => `${t.row},${t.col}`))
+
+    // Find connected components using BFS
+    const visited = new Set()
+    const components = []
+    for (const tile of allTiles) {
+      const key = `${tile.row},${tile.col}`
+      if (visited.has(key)) continue
+
+      const component = []
+      const queue = [tile]
+      while (queue.length > 0) {
+        const current = queue.shift()
+        const currentKey = `${current.row},${current.col}`
+        if (visited.has(currentKey)) continue
+        visited.add(currentKey)
+        component.push(current)
+
+        // Check neighbors
+        const neighbors = [
+          { row: current.row - 1, col: current.col },
+          { row: current.row + 1, col: current.col },
+          { row: current.row, col: current.col - 1 },
+          { row: current.row, col: current.col + 1 }
+        ]
+        for (const n of neighbors) {
+          const nKey = `${n.row},${n.col}`
+          if (tileSet.has(nKey) && !visited.has(nKey)) {
+            const nTile = allTiles.find(t => t.row === n.row && t.col === n.col)
+            if (nTile) queue.push(nTile)
+          }
+        }
+      }
+      components.push(component)
+    }
+
+    // Draw each connected component as a merged shape
+    const inset = 1
+    const radius = 6
+
+    for (const component of components) {
+      const componentSet = new Set(component.map(t => `${t.row},${t.col}`))
+
+      // Draw shadow for the entire merged shape first
+      ctx.fillStyle = COLORS.tileShadow
+      for (const tile of component) {
+        const x = BOARD_PADDING + tile.col * TILE_SIZE
+        const y = BOARD_PADDING + tile.row * TILE_SIZE
+        // Extend fill to edges where there are neighbors (no gap)
+        const hasTop = componentSet.has(`${tile.row - 1},${tile.col}`)
+        const hasBottom = componentSet.has(`${tile.row + 1},${tile.col}`)
+        const hasLeft = componentSet.has(`${tile.row},${tile.col - 1}`)
+        const hasRight = componentSet.has(`${tile.row},${tile.col + 1}`)
+        const top = hasTop ? y : y + inset + 3
+        const left = hasLeft ? x : x + inset + 3
+        const bottom = hasBottom ? y + TILE_SIZE : y + TILE_SIZE - inset
+        const right = hasRight ? x + TILE_SIZE : x + TILE_SIZE - inset
+        ctx.fillRect(left, top, right - left, bottom - top)
+      }
+
+      // Draw each tile's fill with its individual color
+      for (const tile of component) {
+        const x = BOARD_PADDING + tile.col * TILE_SIZE
+        const y = BOARD_PADDING + tile.row * TILE_SIZE
+
+        // Each tile gets its own color
+        if (tile.isNew) {
+          ctx.fillStyle = COLORS.newTile
+        } else if (tile.isLastMove) {
+          ctx.fillStyle = COLORS.lastMoveTile
+        } else {
+          ctx.fillStyle = COLORS.tile
+        }
+
+        // Extend fill to edges where there are neighbors (no gap)
+        const hasTop = componentSet.has(`${tile.row - 1},${tile.col}`)
+        const hasBottom = componentSet.has(`${tile.row + 1},${tile.col}`)
+        const hasLeft = componentSet.has(`${tile.row},${tile.col - 1}`)
+        const hasRight = componentSet.has(`${tile.row},${tile.col + 1}`)
+
+        const top = hasTop ? y : y + inset
+        const left = hasLeft ? x : x + inset
+        const bottom = hasBottom ? y + TILE_SIZE : y + TILE_SIZE - inset
+        const right = hasRight ? x + TILE_SIZE : x + TILE_SIZE - inset
+
+        ctx.fillRect(left, top, right - left, bottom - top)
+      }
+
+
+      // Draw letters and values on top
+      for (const tile of component) {
+        const x = BOARD_PADDING + tile.col * TILE_SIZE
+        const y = BOARD_PADDING + tile.row * TILE_SIZE
+
+        // Letter
+        ctx.fillStyle = COLORS.text
+        ctx.font = 'bold 24px Georgia, "Times New Roman", serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(tile.letter === ' ' ? '' : tile.letter, x + TILE_SIZE / 2, y + TILE_SIZE / 2 - 2)
+
+        // Underline for blank tiles
+        if (tile.isBlank && tile.letter !== ' ') {
+          ctx.strokeStyle = COLORS.text
+          ctx.lineWidth = 1.5
+          ctx.beginPath()
+          ctx.moveTo(x + 12, y + TILE_SIZE - 10)
+          ctx.lineTo(x + TILE_SIZE - 12, y + TILE_SIZE - 10)
+          ctx.stroke()
+        }
+
+        // Point value
+        if (tile.value > 0) {
+          ctx.fillStyle = COLORS.textMuted
+          ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, sans-serif'
+          ctx.textAlign = 'right'
+          ctx.fillText(String(tile.value), x + TILE_SIZE - 6, y + TILE_SIZE - 6)
+        }
+      }
     }
 
     // Draw score indicator for valid moves
@@ -316,57 +427,6 @@ export default function ScrabbleGame() {
     }
   }, [game, placedTiles, lastMoveTiles, preview])
 
-  const drawTile = (ctx, x, y, letter, value, isNew = false, isBlank = false, isLastMove = false) => {
-    let tileColor = COLORS.tile
-    let borderColor = COLORS.tileBorder
-
-    if (isNew) {
-      tileColor = COLORS.newTile
-      borderColor = COLORS.newTileBorder
-    } else if (isLastMove) {
-      tileColor = COLORS.lastMoveTile
-      borderColor = COLORS.lastMoveBorder
-    }
-
-    // Subtle shadow
-    ctx.fillStyle = COLORS.tileShadow
-    ctx.fillRect(x + 4, y + 4, TILE_SIZE - 6, TILE_SIZE - 6)
-
-    // Tile face
-    ctx.fillStyle = tileColor
-    ctx.fillRect(x + 2, y + 2, TILE_SIZE - 6, TILE_SIZE - 6)
-
-    // Border
-    ctx.strokeStyle = borderColor
-    ctx.lineWidth = 1
-    ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 6, TILE_SIZE - 6)
-
-    // Letter
-    ctx.fillStyle = COLORS.text
-    ctx.font = 'bold 24px Georgia, "Times New Roman", serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(letter === ' ' ? '' : letter, x + TILE_SIZE / 2, y + TILE_SIZE / 2 - 2)
-
-    // Underline for blank tiles
-    if (isBlank && letter !== ' ') {
-      ctx.strokeStyle = COLORS.text
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.moveTo(x + 12, y + TILE_SIZE - 10)
-      ctx.lineTo(x + TILE_SIZE - 12, y + TILE_SIZE - 10)
-      ctx.stroke()
-    }
-
-    // Point value
-    if (value > 0) {
-      ctx.fillStyle = COLORS.textMuted
-      ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, sans-serif'
-      ctx.textAlign = 'right'
-      ctx.fillText(String(value), x + TILE_SIZE - 6, y + TILE_SIZE - 6)
-    }
-  }
-
   const getTileValue = (letter) => {
     const values = { A: 1, B: 3, C: 3, D: 2, E: 1, F: 4, G: 2, H: 4, I: 1, J: 8, K: 5, L: 1, M: 3, N: 1, O: 1, P: 3, Q: 10, R: 1, S: 1, T: 1, U: 1, V: 4, W: 4, X: 8, Y: 4, Z: 10, ' ': 0 }
     return values[letter] || 0
@@ -374,7 +434,6 @@ export default function ScrabbleGame() {
 
   const handleCanvasClick = (e) => {
     if (!isYourTurn || game?.status !== 'active') return
-    if (isPanning) return
 
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
@@ -411,142 +470,12 @@ export default function ScrabbleGame() {
     }
   }
 
-  // Pan handlers with touch support
-  const handlePanStart = (e) => {
-    // Handle pinch start
-    if (e.touches && e.touches.length === 2) {
-      e.preventDefault()
-      const touch1 = e.touches[0]
-      const touch2 = e.touches[1]
-      const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY)
-      const midX = (touch1.clientX + touch2.clientX) / 2
-      const midY = (touch1.clientY + touch2.clientY) / 2
-      pinchStartRef.current = {
-        dist,
-        scale: zoomScale,
-        midX,
-        midY,
-        scrollX: wrapperRef.current?.scrollLeft || 0,
-        scrollY: wrapperRef.current?.scrollTop || 0,
-      }
-      return
-    }
-
-    if (e.touches && e.touches.length > 1) return
-
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY
-
-    panStartRef.current = {
-      x: clientX,
-      y: clientY,
-      scrollX: wrapperRef.current?.scrollLeft || 0,
-      scrollY: wrapperRef.current?.scrollTop || 0,
-    }
-    setIsPanning(false)
-  }
-
-  const handlePanMove = (e) => {
-    // Handle pinch zoom
-    if (e.touches && e.touches.length === 2 && pinchStartRef.current) {
-      e.preventDefault()
-      const touch1 = e.touches[0]
-      const touch2 = e.touches[1]
-      const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY)
-      const scaleFactor = dist / pinchStartRef.current.dist
-      const minZoom = getMinZoom()
-      const newScale = Math.min(MAX_ZOOM, Math.max(minZoom, pinchStartRef.current.scale * scaleFactor))
-
-      // Calculate new scroll position to keep pinch center stationary
-      const wrapper = wrapperRef.current
-      if (wrapper) {
-        const rect = wrapper.getBoundingClientRect()
-        const pinchCenterX = pinchStartRef.current.midX - rect.left
-        const pinchCenterY = pinchStartRef.current.midY - rect.top
-
-        // Point in content at pinch start
-        const contentX = (pinchStartRef.current.scrollX + pinchCenterX) / pinchStartRef.current.scale
-        const contentY = (pinchStartRef.current.scrollY + pinchCenterY) / pinchStartRef.current.scale
-
-        // New scroll to keep that point under pinch center
-        const newScrollX = contentX * newScale - pinchCenterX
-        const newScrollY = contentY * newScale - pinchCenterY
-
-        wrapper.scrollLeft = Math.max(0, newScrollX)
-        wrapper.scrollTop = Math.max(0, newScrollY)
-      }
-
-      setZoomScale(newScale)
-      return
-    }
-
-    const panStart = panStartRef.current
-    if (!panStart.x && !panStart.y) return
-
-    // Prevent page scroll on touch devices
-    if (e.touches) {
-      e.preventDefault()
-    }
-
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY
-
-    const deltaX = panStart.x - clientX
-    const deltaY = panStart.y - clientY
-
-    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-      setIsPanning(true)
-    }
-
-    if (wrapperRef.current) {
-      wrapperRef.current.scrollLeft = panStart.scrollX + deltaX
-      wrapperRef.current.scrollTop = panStart.scrollY + deltaY
-    }
-  }
-
-  const handlePanEnd = () => {
-    panStartRef.current = { x: 0, y: 0, scrollX: 0, scrollY: 0 }
-    pinchStartRef.current = null
-    setTimeout(() => setIsPanning(false), 50)
-  }
-
+  // Double tap to toggle zoom
   const handleDoubleTap = (e) => {
     const now = Date.now()
-    const DOUBLE_TAP_DELAY = 300
-
-    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+    if (now - lastTapRef.current < 300) {
       e.preventDefault()
-
-      const wrapper = wrapperRef.current
-      if (!wrapper) return
-
-      const rect = wrapper.getBoundingClientRect()
-
-      // Tap position relative to wrapper (fallback to center)
-      const tapX = e.touches
-        ? e.touches[0].clientX - rect.left
-        : rect.width / 2
-      const tapY = e.touches
-        ? e.touches[0].clientY - rect.top
-        : rect.height / 2
-
-      const minZoom = getMinZoom()
-      const targetScale =
-        zoomScale < minZoom + 0.1 ? 1 : minZoom
-
-      // Convert tap point to content coordinates
-      const contentX = (wrapper.scrollLeft + tapX) / zoomScale
-      const contentY = (wrapper.scrollTop + tapY) / zoomScale
-
-      // Apply zoom
-      setZoomScale(targetScale)
-
-      // Re-center scroll so tap stays fixed
-      requestAnimationFrame(() => {
-        wrapper.scrollLeft = contentX * targetScale - tapX
-        wrapper.scrollTop = contentY * targetScale - tapY
-      })
-
+      setIsZoomedIn(prev => !prev)
       lastTapRef.current = 0
     } else {
       lastTapRef.current = now
@@ -825,40 +754,17 @@ export default function ScrabbleGame() {
         {/* Board */}
         <div className="scrabble-board-container">
           <div
-            ref={wrapperRef}
-            className="scrabble-board-wrapper"
-            onMouseDown={handlePanStart}
-            onMouseMove={handlePanMove}
-            onMouseUp={handlePanEnd}
-            onMouseLeave={handlePanEnd}
-            onTouchStart={(e) => { handlePanStart(e); handleDoubleTap(e); }}
-            onTouchMove={handlePanMove}
-            onTouchEnd={handlePanEnd}
-            onDoubleClick={() => {
-              const minZoom = getMinZoom()
-              if (zoomScale < minZoom + 0.1) {
-                setZoomScale(1)
-              } else {
-                setZoomScale(minZoom)
-              }
-            }}
+            className={`scrabble-board-wrapper ${isZoomedIn ? 'zoomed-in' : 'zoomed-out'}`}
+            onTouchStart={handleDoubleTap}
+            onDoubleClick={() => setIsZoomedIn(prev => !prev)}
           >
-            <div
-              className="scrabble-board-scaler"
-              style={{
-                width: canvasSize * zoomScale,
-                height: canvasSize * zoomScale,
-              }}
-            >
-              <canvas
-                ref={canvasRef}
-                width={canvasSize}
-                height={canvasSize}
-                onClick={handleCanvasClick}
-                className="scrabble-board"
-                style={{ transform: `scale(${zoomScale})`, transformOrigin: 'top left' }}
-              />
-            </div>
+            <canvas
+              ref={canvasRef}
+              width={canvasSize}
+              height={canvasSize}
+              onClick={handleCanvasClick}
+              className="scrabble-board"
+            />
           </div>
         </div>
 
