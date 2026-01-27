@@ -344,6 +344,72 @@ class ApiService {
     }
     return data
   }
+
+  // Mastermind API
+  async getMastermindGames() {
+    const response = await this.request('/mastermind/games')
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Failed to get games')
+    }
+    return response.json()
+  }
+
+  async createMastermindGame(opponentId) {
+    const response = await this.request('/mastermind/games', {
+      method: 'POST',
+      body: JSON.stringify({ opponent_id: opponentId }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create game')
+    }
+    return data
+  }
+
+  async getMastermindGame(gameId) {
+    const response = await this.request(`/mastermind/games/${gameId}`)
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Failed to get game')
+    }
+    return response.json()
+  }
+
+  async setMastermindSecret(gameId, code) {
+    const response = await this.request(`/mastermind/games/${gameId}/secret`, {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to set secret')
+    }
+    return data
+  }
+
+  async makeMastermindGuess(gameId, guess) {
+    const response = await this.request(`/mastermind/games/${gameId}/guess`, {
+      method: 'POST',
+      body: JSON.stringify({ guess }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to make guess')
+    }
+    return data
+  }
+
+  async resignMastermindGame(gameId) {
+    const response = await this.request(`/mastermind/games/${gameId}/resign`, {
+      method: 'POST',
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to resign game')
+    }
+    return data
+  }
 }
 
 export const api = new ApiService()

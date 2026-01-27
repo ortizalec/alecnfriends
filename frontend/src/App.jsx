@@ -7,6 +7,8 @@ import ScrabbleHome from './pages/ScrabbleHome'
 import ScrabbleGame from './pages/ScrabbleGame'
 import BattleshipHome from './pages/BattleshipHome'
 import BattleshipGame from './pages/BattleshipGame'
+import MastermindHome from './pages/MastermindHome'
+import MastermindGame from './pages/MastermindGame'
 import Friends from './pages/Friends'
 import Profile from './pages/Profile'
 
@@ -66,6 +68,22 @@ function App() {
         element={
           <ProtectedRoute>
             <BattleshipGame />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mastermind"
+        element={
+          <ProtectedRoute>
+            <MastermindHome />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mastermind/:id"
+        element={
+          <ProtectedRoute>
+            <MastermindGame />
           </ProtectedRoute>
         }
       />

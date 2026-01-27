@@ -2207,3 +2207,473 @@ h1, h2, h3 {
     font-size: 0.75rem;
   }
 }
+
+/* ========================================
+   MASTERMIND GAME - RETRO THEME
+   ======================================== */
+
+.mastermind-page {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.mastermind-page .header {
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.mastermind-page .header a,
+.mastermind-page .header span {
+  color: #e0e0e0;
+}
+
+.mastermind-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mastermind-loading {
+  color: #00ffff;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+
+.mastermind-header {
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.mastermind-header h2 {
+  color: #00ffff;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  margin-bottom: 0.25rem;
+  font-size: 1.25rem;
+}
+
+.mastermind-subtitle {
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.mastermind-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.mastermind-status .player-name {
+  color: #aaa;
+  font-family: 'Courier New', monospace;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+
+.mastermind-status .player-name.current {
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+}
+
+.mastermind-status .vs {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+.mastermind-status .game-result {
+  color: #ff00ff;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255, 0, 255, 0.7);
+  margin-left: 0.5rem;
+}
+
+.round-indicator {
+  color: #888;
+  font-size: 0.75rem;
+  font-family: 'Courier New', monospace;
+  margin-top: 0.25rem;
+}
+
+/* Pegs */
+.mastermind-peg {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mastermind-peg.empty {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.mastermind-peg.clickable:hover {
+  transform: scale(1.1);
+  cursor: pointer;
+}
+
+.mastermind-peg.selected {
+  box-shadow:
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+    0 0 0 3px #00ffff,
+    0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+.mastermind-peg-small {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset -1px -1px 2px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  color: #666;
+}
+
+.mastermind-peg-small.mystery {
+  background: rgba(255, 255, 255, 0.05);
+  color: #666;
+}
+
+/* Feedback pegs */
+.feedback-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3px;
+  padding: 4px;
+}
+
+.feedback-peg {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.feedback-peg.correct {
+  background: #121212;
+  border-color: #444;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.feedback-peg.misplaced {
+  background: #fff;
+  border-color: #ddd;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+.feedback-peg.empty {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Setup */
+.mastermind-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.secret-code-display,
+.current-guess {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.setup-slot,
+.guess-slot {
+  padding: 4px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.setup-slot:hover,
+.guess-slot:hover {
+  background: rgba(0, 255, 255, 0.1);
+}
+
+.setup-slot.selected,
+.guess-slot.selected {
+  background: rgba(0, 255, 255, 0.2);
+}
+
+/* Color palette */
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  max-width: 300px;
+}
+
+.color-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow:
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.color-btn:hover:not(:disabled) {
+  transform: scale(1.15);
+  box-shadow:
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+    0 0 15px currentColor;
+}
+
+.color-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Boards */
+.mastermind-boards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mastermind-board {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  padding: 0.75rem;
+}
+
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.board-title {
+  color: #00ffff;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+.secret-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.mini-code {
+  display: flex;
+  gap: 3px;
+}
+
+.board-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Guess rows */
+.mastermind-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.mastermind-row.empty {
+  opacity: 0.3;
+}
+
+.mastermind-row.opponent {
+  background: rgba(255, 0, 255, 0.05);
+}
+
+.row-number {
+  color: #666;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  width: 20px;
+  text-align: center;
+}
+
+.guess-pegs {
+  display: flex;
+  gap: 0.375rem;
+}
+
+/* Input area */
+.mastermind-input {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+/* Actions */
+.mastermind-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.mastermind-console {
+  flex: 1;
+  text-align: center;
+  color: #00ffff;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+  min-width: 120px;
+}
+
+.mastermind-page .btn {
+  font-family: 'Courier New', monospace;
+}
+
+.mastermind-page .btn-primary {
+  background: linear-gradient(135deg, #00ffff 0%, #0088aa 100%);
+  border-color: #00ffff;
+  color: #000;
+  text-shadow: none;
+}
+
+.mastermind-page .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #00ffff 0%, #00aacc 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+.mastermind-page .btn-primary:disabled {
+  background: #333;
+  border-color: #555;
+  color: #888;
+}
+
+.mastermind-page .btn-secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #aaa;
+}
+
+.mastermind-page .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+.mastermind-page .alert-error {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: #ff4444;
+  color: #ff8888;
+}
+
+/* Waiting state */
+.mastermind-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.your-secret-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.your-secret-preview .label {
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.secret-pegs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 400px) {
+  .mastermind-peg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .color-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .mastermind-peg-small {
+    width: 16px;
+    height: 16px;
+  }
+
+  .feedback-peg {
+    width: 8px;
+    height: 8px;
+  }
+
+  .mastermind-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .board-title {
+    font-size: 0.75rem;
+  }
+
+  .secret-display {
+    font-size: 0.6875rem;
+  }
+
+  .guess-pegs {
+    gap: 0.25rem;
+  }
+
+  .mastermind-actions {
+    flex-direction: column;
+  }
+
+  .mastermind-console {
+    order: -1;
+    width: 100%;
+  }
+}

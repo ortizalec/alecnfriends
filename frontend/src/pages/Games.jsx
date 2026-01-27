@@ -7,6 +7,7 @@ export default function Games() {
   const navigate = useNavigate()
   const [scrabbleCount, setScrabbleCount] = useState(0)
   const [battleshipCount, setBattleshipCount] = useState(0)
+  const [mastermindCount, setMastermindCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -15,14 +16,17 @@ export default function Games() {
 
   const loadCounts = async () => {
     try {
-      const [scrabbleData, battleshipData] = await Promise.all([
+      const [scrabbleData, battleshipData, mastermindData] = await Promise.all([
         api.getScrabbleGames(),
         api.getBattleshipGames().catch(() => ({ your_turn: [], their_turn: [] })),
+        api.getMastermindGames().catch(() => ({ your_turn: [], their_turn: [] })),
       ])
       const scrabbleActive = (scrabbleData.your_turn?.length || 0) + (scrabbleData.their_turn?.length || 0)
       const battleshipActive = (battleshipData.your_turn?.length || 0) + (battleshipData.their_turn?.length || 0)
+      const mastermindActive = (mastermindData.your_turn?.length || 0) + (mastermindData.their_turn?.length || 0)
       setScrabbleCount(scrabbleActive)
       setBattleshipCount(battleshipActive)
+      setMastermindCount(mastermindActive)
     } catch {
       // Ignore errors for counts
     } finally {
@@ -80,6 +84,33 @@ export default function Games() {
             </div>
             {!loading && battleshipCount > 0 && (
               <span className="game-hub-badge">{battleshipCount}</span>
+            )}
+            <span className="game-hub-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </span>
+          </button>
+
+          <button
+            className="game-hub-card"
+            onClick={() => navigate('/mastermind')}
+          >
+            <div className="game-hub-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="12" cy="12" r="3" />
+                <circle cx="18" cy="12" r="3" />
+                <circle cx="9" cy="18" r="2" />
+                <circle cx="15" cy="18" r="2" />
+              </svg>
+            </div>
+            <div className="game-hub-info">
+              <h2 className="game-hub-title">Mastermind</h2>
+              <p className="game-hub-description">Code-breaking game</p>
+            </div>
+            {!loading && mastermindCount > 0 && (
+              <span className="game-hub-badge">{mastermindCount}</span>
             )}
             <span className="game-hub-arrow">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

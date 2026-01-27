@@ -140,6 +140,46 @@ func migrate(db *sql.DB) error {
 			UNIQUE(game_id, user_id)
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_battleship_boards_game ON battleship_boards(game_id)`,
+		// Mastermind game tables
+		`CREATE TABLE IF NOT EXISTS mastermind_games (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			player1_id INTEGER NOT NULL,
+			player2_id INTEGER NOT NULL,
+			current_turn INTEGER NOT NULL,
+			status TEXT NOT NULL DEFAULT 'setup',
+			winner_id INTEGER,
+			max_guesses INTEGER DEFAULT 10,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (player2_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_mastermind_games_player1 ON mastermind_games(player1_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_mastermind_games_player2 ON mastermind_games(player2_id)`,
+		`CREATE TABLE IF NOT EXISTS mastermind_secrets (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			game_id INTEGER NOT NULL,
+			user_id INTEGER NOT NULL,
+			code TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (game_id) REFERENCES mastermind_games(id) ON DELETE CASCADE,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+			UNIQUE(game_id, user_id)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_mastermind_secrets_game ON mastermind_secrets(game_id)`,
+		`CREATE TABLE IF NOT EXISTS mastermind_guesses (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			game_id INTEGER NOT NULL,
+			user_id INTEGER NOT NULL,
+			guess TEXT NOT NULL,
+			correct INTEGER NOT NULL,
+			misplaced INTEGER NOT NULL,
+			guess_number INTEGER NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (game_id) REFERENCES mastermind_games(id) ON DELETE CASCADE,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_mastermind_guesses_game ON mastermind_guesses(game_id)`,
 	}
 
 	for _, m := range migrations {

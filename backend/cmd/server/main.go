@@ -80,6 +80,14 @@ func main() {
 	mux.HandleFunc("POST /api/battleship/games/{id}/fire", middleware.Auth(jwtSecret, h.FireBattleshipShot))
 	mux.HandleFunc("POST /api/battleship/games/{id}/resign", middleware.Auth(jwtSecret, h.ResignBattleshipGame))
 
+	// Mastermind routes
+	mux.HandleFunc("GET /api/mastermind/games", middleware.Auth(jwtSecret, h.GetMastermindGames))
+	mux.HandleFunc("POST /api/mastermind/games", middleware.Auth(jwtSecret, h.CreateMastermindGame))
+	mux.HandleFunc("GET /api/mastermind/games/{id}", middleware.Auth(jwtSecret, h.GetMastermindGame))
+	mux.HandleFunc("POST /api/mastermind/games/{id}/secret", middleware.Auth(jwtSecret, h.SetMastermindSecret))
+	mux.HandleFunc("POST /api/mastermind/games/{id}/guess", middleware.Auth(jwtSecret, h.MakeMastermindGuess))
+	mux.HandleFunc("POST /api/mastermind/games/{id}/resign", middleware.Auth(jwtSecret, h.ResignMastermindGame))
+
 	// Health check
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
