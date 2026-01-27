@@ -1,12 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 
 const BOARD_SIZE = 15
-const TILE_SIZE = 48
-const BOARD_PADDING = 4
 
 const BONUS_SQUARES = [
   [4, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 4],
@@ -26,36 +24,6 @@ const BONUS_SQUARES = [
   [4, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 4],
 ]
 
-// NYT Games color palette
-const COLORS = {
-  boardBg: '#f3f3f3',      // light gray board background
-  gridLine: '#e8e8e8',     // subtle grid lines
-  normal: '#ffffff',       // empty squares - white
-  doubleLetter: '#b8d4e8', // soft blue
-  tripleLetter: '#8b7bb5', // muted purple
-  doubleWord: '#e8c4c4',   // soft pink
-  tripleWord: '#d4a843',   // gold/mustard
-  center: '#f3f3f3',       // center square
-  tile: '#f5f0e1',         // placed tiles - cream/beige
-  tileShadow: '#d4cfc4',   // tile shadow
-  tileBorder: '#c4bfb4',   // tile border
-  newTile: '#c8e6c9',      // newly placed tiles - soft green
-  newTileBorder: '#81c784',
-  lastMoveTile: '#c8e6c9', // last move tiles - soft green
-  lastMoveBorder: '#81c784',
-  text: '#1a1a1a',         // dark text
-  textMuted: '#666666',    // muted text
-}
-
-const BONUS_COLORS = {
-  0: COLORS.normal,
-  1: COLORS.doubleLetter,
-  2: COLORS.tripleLetter,
-  3: COLORS.doubleWord,
-  4: COLORS.tripleWord,
-  5: COLORS.center,
-}
-
 const BONUS_LABELS = {
   1: '2L',
   2: '3L',
@@ -64,13 +32,27 @@ const BONUS_LABELS = {
   5: '★',
 }
 
+const BONUS_CLASSES = {
+  0: 'normal',
+  1: 'double-letter',
+  2: 'triple-letter',
+  3: 'double-word',
+  4: 'triple-word',
+  5: 'center',
+}
+
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+
+const TILE_VALUES = {
+  A: 1, B: 3, C: 3, D: 2, E: 1, F: 4, G: 2, H: 4, I: 1, J: 8, K: 5,
+  L: 1, M: 3, N: 1, O: 1, P: 3, Q: 10, R: 1, S: 1, T: 1, U: 1, V: 4,
+  W: 4, X: 8, Y: 4, Z: 10, ' ': 0
+}
 
 export default function ScrabbleGame() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const canvasRef = useRef(null)
 
   const [game, setGame] = useState(null)
   const [rack, setRack] = useState([])
@@ -80,29 +62,23 @@ export default function ScrabbleGame() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
-  const [selectedTile, setSelectedTile] = useState(null) // { rackIndex, letter, chosenLetter, isBlank }
+  const [selectedTile, setSelectedTile] = useState(null)
   const [placedTiles, setPlacedTiles] = useState([])
   const [preview, setPreview] = useState(null)
-  const [lastMoveTiles, setLastMoveTiles] = useState([]) // Array of {row, col} for last move highlighting
+  const [lastMoveTiles, setLastMoveTiles] = useState([])
 
   const [showExchangeModal, setShowExchangeModal] = useState(false)
   const [exchangeSelection, setExchangeSelection] = useState([])
 
-  // Blank tile selection
   const [showBlankModal, setShowBlankModal] = useState(false)
-  const [pendingBlankTile, setPendingBlankTile] = useState(null) // { rackIndex, availableIdx }
+  const [pendingBlankTile, setPendingBlankTile] = useState(null)
 
-  // More menu and modals
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [showTileBagModal, setShowTileBagModal] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [tileBagContents, setTileBagContents] = useState(null)
   const [gameHistory, setGameHistory] = useState(null)
   const moreMenuRef = useRef(null)
-
-  // Zoom state: true = zoomed in (1:1), false = zoomed out (fit to screen)
-  const [isZoomedIn, setIsZoomedIn] = useState(false)
-  const lastTapRef = useRef(0)
 
   const loadGame = useCallback(async () => {
     try {
@@ -115,7 +91,6 @@ export default function ScrabbleGame() {
       setPreview(null)
       setSelectedTile(null)
 
-      // Parse last move tiles for highlighting
       if (data.last_move?.tiles_played && data.last_move.move_type === 'play') {
         try {
           const tiles = JSON.parse(data.last_move.tiles_played)
@@ -137,7 +112,6 @@ export default function ScrabbleGame() {
     loadGame()
   }, [loadGame])
 
-  // Poll for updates when waiting for opponent
   useEffect(() => {
     if (!game || game.status !== 'active' || isYourTurn) return
 
@@ -148,7 +122,6 @@ export default function ScrabbleGame() {
     return () => clearInterval(interval)
   }, [game?.status, isYourTurn, loadGame])
 
-  // Refresh when tab becomes visible
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -160,8 +133,6 @@ export default function ScrabbleGame() {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [loadGame])
 
-
-  // Click outside handler for More menu
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
@@ -174,7 +145,6 @@ export default function ScrabbleGame() {
     }
   }, [showMoreMenu])
 
-  // Preview move when tiles are placed
   useEffect(() => {
     if (placedTiles.length === 0) {
       setPreview(null)
@@ -184,7 +154,7 @@ export default function ScrabbleGame() {
     const previewMove = async () => {
       try {
         const tiles = placedTiles.map(t => ({
-          letter: t.displayLetter, // Use the chosen letter for blanks
+          letter: t.displayLetter,
           row: t.row,
           col: t.col,
         }))
@@ -199,57 +169,13 @@ export default function ScrabbleGame() {
     return () => clearTimeout(timeout)
   }, [placedTiles, id])
 
-  // Draw board
-  useEffect(() => {
-    if (!game || !canvasRef.current) return
+  const getTileValue = (letter) => TILE_VALUES[letter] || 0
 
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    const board = game.board || []
-
-    // Board background
-    ctx.fillStyle = COLORS.boardBg
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    // Helper to draw square with top-left and bottom-right corners rounded
-    const drawSquare = (sx, sy, size, radius) => {
-      ctx.beginPath()
-      ctx.roundRect(sx, sy, size, size, [radius, 0, radius, 0])
-    }
-
-    // Draw empty board squares
-    for (let row = 0; row < BOARD_SIZE; row++) {
-      for (let col = 0; col < BOARD_SIZE; col++) {
-        const x = BOARD_PADDING + col * TILE_SIZE
-        const y = BOARD_PADDING + row * TILE_SIZE
-        const bonus = BONUS_SQUARES[row][col]
-
-        // Draw square with diagonal rounded corners
-        ctx.fillStyle = BONUS_COLORS[bonus]
-        drawSquare(x + 1, y + 1, TILE_SIZE - 2, 8)
-        ctx.fill()
-
-        // Draw thin dark border on all squares
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
-        ctx.lineWidth = 0.5
-        drawSquare(x + 1, y + 1, TILE_SIZE - 2, 8)
-        ctx.stroke()
-
-        // Draw bonus label (only if no tile)
-        const hasExistingTile = board[row]?.[col]?.letter
-        const hasNewTile = placedTiles.some(t => t.row === row && t.col === col)
-        if (bonus > 0 && !hasExistingTile && !hasNewTile) {
-          ctx.fillStyle = bonus === 4 || bonus === 2 ? '#fff' : COLORS.text
-          ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif'
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'middle'
-          ctx.fillText(BONUS_LABELS[bonus], x + TILE_SIZE / 2, y + TILE_SIZE / 2)
-        }
-      }
-    }
-
-    // Collect all tile data with positions
+  // Build tile map for connected component detection
+  const buildTileMap = () => {
+    const board = game?.board || []
     const allTiles = []
+
     for (let row = 0; row < BOARD_SIZE; row++) {
       for (let col = 0; col < BOARD_SIZE; col++) {
         if (board[row]?.[col]?.letter) {
@@ -266,6 +192,7 @@ export default function ScrabbleGame() {
         }
       }
     }
+
     for (const tile of placedTiles) {
       allTiles.push({
         row: tile.row,
@@ -278,175 +205,19 @@ export default function ScrabbleGame() {
       })
     }
 
-    // Create a set of tile positions for quick lookup
-    const tileSet = new Set(allTiles.map(t => `${t.row},${t.col}`))
-
-    // Find connected components using BFS
-    const visited = new Set()
-    const components = []
-    for (const tile of allTiles) {
-      const key = `${tile.row},${tile.col}`
-      if (visited.has(key)) continue
-
-      const component = []
-      const queue = [tile]
-      while (queue.length > 0) {
-        const current = queue.shift()
-        const currentKey = `${current.row},${current.col}`
-        if (visited.has(currentKey)) continue
-        visited.add(currentKey)
-        component.push(current)
-
-        // Check neighbors
-        const neighbors = [
-          { row: current.row - 1, col: current.col },
-          { row: current.row + 1, col: current.col },
-          { row: current.row, col: current.col - 1 },
-          { row: current.row, col: current.col + 1 }
-        ]
-        for (const n of neighbors) {
-          const nKey = `${n.row},${n.col}`
-          if (tileSet.has(nKey) && !visited.has(nKey)) {
-            const nTile = allTiles.find(t => t.row === n.row && t.col === n.col)
-            if (nTile) queue.push(nTile)
-          }
-        }
-      }
-      components.push(component)
-    }
-
-    // Draw each connected component as a merged shape
-    const inset = 1
-    const radius = 6
-
-    for (const component of components) {
-      const componentSet = new Set(component.map(t => `${t.row},${t.col}`))
-
-      // Draw shadow for the entire merged shape first
-      ctx.fillStyle = COLORS.tileShadow
-      for (const tile of component) {
-        const x = BOARD_PADDING + tile.col * TILE_SIZE
-        const y = BOARD_PADDING + tile.row * TILE_SIZE
-        // Extend fill to edges where there are neighbors (no gap)
-        const hasTop = componentSet.has(`${tile.row - 1},${tile.col}`)
-        const hasBottom = componentSet.has(`${tile.row + 1},${tile.col}`)
-        const hasLeft = componentSet.has(`${tile.row},${tile.col - 1}`)
-        const hasRight = componentSet.has(`${tile.row},${tile.col + 1}`)
-        const top = hasTop ? y : y + inset + 3
-        const left = hasLeft ? x : x + inset + 3
-        const bottom = hasBottom ? y + TILE_SIZE : y + TILE_SIZE - inset
-        const right = hasRight ? x + TILE_SIZE : x + TILE_SIZE - inset
-        ctx.fillRect(left, top, right - left, bottom - top)
-      }
-
-      // Draw each tile's fill with its individual color
-      for (const tile of component) {
-        const x = BOARD_PADDING + tile.col * TILE_SIZE
-        const y = BOARD_PADDING + tile.row * TILE_SIZE
-
-        // Each tile gets its own color
-        if (tile.isNew) {
-          ctx.fillStyle = COLORS.newTile
-        } else if (tile.isLastMove) {
-          ctx.fillStyle = COLORS.lastMoveTile
-        } else {
-          ctx.fillStyle = COLORS.tile
-        }
-
-        // Extend fill to edges where there are neighbors (no gap)
-        const hasTop = componentSet.has(`${tile.row - 1},${tile.col}`)
-        const hasBottom = componentSet.has(`${tile.row + 1},${tile.col}`)
-        const hasLeft = componentSet.has(`${tile.row},${tile.col - 1}`)
-        const hasRight = componentSet.has(`${tile.row},${tile.col + 1}`)
-
-        const top = hasTop ? y : y + inset
-        const left = hasLeft ? x : x + inset
-        const bottom = hasBottom ? y + TILE_SIZE : y + TILE_SIZE - inset
-        const right = hasRight ? x + TILE_SIZE : x + TILE_SIZE - inset
-
-        ctx.fillRect(left, top, right - left, bottom - top)
-      }
-
-
-      // Draw letters and values on top
-      for (const tile of component) {
-        const x = BOARD_PADDING + tile.col * TILE_SIZE
-        const y = BOARD_PADDING + tile.row * TILE_SIZE
-
-        // Letter
-        ctx.fillStyle = COLORS.text
-        ctx.font = 'bold 24px Georgia, "Times New Roman", serif'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(tile.letter === ' ' ? '' : tile.letter, x + TILE_SIZE / 2, y + TILE_SIZE / 2 - 2)
-
-        // Underline for blank tiles
-        if (tile.isBlank && tile.letter !== ' ') {
-          ctx.strokeStyle = COLORS.text
-          ctx.lineWidth = 1.5
-          ctx.beginPath()
-          ctx.moveTo(x + 12, y + TILE_SIZE - 10)
-          ctx.lineTo(x + TILE_SIZE - 12, y + TILE_SIZE - 10)
-          ctx.stroke()
-        }
-
-        // Point value
-        if (tile.value > 0) {
-          ctx.fillStyle = COLORS.textMuted
-          ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, sans-serif'
-          ctx.textAlign = 'right'
-          ctx.fillText(String(tile.value), x + TILE_SIZE - 6, y + TILE_SIZE - 6)
-        }
-      }
-    }
-
-    // Draw score indicator for valid moves
-    if (preview?.valid && placedTiles.length > 0) {
-      const lastTile = placedTiles[placedTiles.length - 1]
-      const badgeX = BOARD_PADDING + lastTile.col * TILE_SIZE + TILE_SIZE - 4
-      const badgeY = BOARD_PADDING + lastTile.row * TILE_SIZE + 4
-
-      const scoreText = `+${preview.score}`
-      ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif'
-      const textWidth = ctx.measureText(scoreText).width
-      const padding = 4
-      const badgeWidth = textWidth + padding * 2
-      const badgeHeight = 18
-
-      // Draw badge background
-      ctx.fillStyle = '#2e7d32'
-      ctx.beginPath()
-      ctx.roundRect(badgeX - badgeWidth, badgeY, badgeWidth, badgeHeight, 4)
-      ctx.fill()
-
-      // Draw badge text
-      ctx.fillStyle = '#fff'
-      ctx.textAlign = 'right'
-      ctx.textBaseline = 'top'
-      ctx.fillText(scoreText, badgeX - padding, badgeY + 2)
-    }
-  }, [game, placedTiles, lastMoveTiles, preview])
-
-  const getTileValue = (letter) => {
-    const values = { A: 1, B: 3, C: 3, D: 2, E: 1, F: 4, G: 2, H: 4, I: 1, J: 8, K: 5, L: 1, M: 3, N: 1, O: 1, P: 3, Q: 10, R: 1, S: 1, T: 1, U: 1, V: 4, W: 4, X: 8, Y: 4, Z: 10, ' ': 0 }
-    return values[letter] || 0
+    return allTiles
   }
 
-  const handleCanvasClick = (e) => {
+  // Get tile neighbors for border rendering
+  const getTileNeighbors = (row, col, tileSet) => ({
+    top: tileSet.has(`${row - 1},${col}`),
+    bottom: tileSet.has(`${row + 1},${col}`),
+    left: tileSet.has(`${row},${col - 1}`),
+    right: tileSet.has(`${row},${col + 1}`),
+  })
+
+  const handleCellClick = (row, col) => {
     if (!isYourTurn || game?.status !== 'active') return
-
-    const canvas = canvasRef.current
-    const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
-    const x = (e.clientX - rect.left) * scaleX
-    const y = (e.clientY - rect.top) * scaleY
-
-    const col = Math.floor((x - BOARD_PADDING) / TILE_SIZE)
-    const row = Math.floor((y - BOARD_PADDING) / TILE_SIZE)
-
-    if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) return
 
     const board = game?.board || []
     if (board[row]?.[col]?.letter) return
@@ -470,19 +241,6 @@ export default function ScrabbleGame() {
     }
   }
 
-  // Double tap to toggle zoom
-  const handleDoubleTap = (e) => {
-    const now = Date.now()
-    if (now - lastTapRef.current < 300) {
-      e.preventDefault()
-      setIsZoomedIn(prev => !prev)
-      lastTapRef.current = 0
-    } else {
-      lastTapRef.current = now
-    }
-  }
-
-
   const getAvailableRackTiles = () => {
     const usedIndices = new Set(placedTiles.map(t => t.rackIndex))
     return rack
@@ -499,20 +257,17 @@ export default function ScrabbleGame() {
 
     if (!tile) return
 
-    // If clicking already selected tile, deselect
     if (selectedTile && selectedTile.rackIndex === tile.originalIndex) {
       setSelectedTile(null)
       return
     }
 
-    // If it's a blank tile, show letter picker
     if (tile.letter === ' ') {
       setPendingBlankTile({ rackIndex: tile.originalIndex, availableIdx })
       setShowBlankModal(true)
       return
     }
 
-    // Select regular tile
     setSelectedTile({
       rackIndex: tile.originalIndex,
       letter: tile.letter,
@@ -524,7 +279,6 @@ export default function ScrabbleGame() {
   const handleBlankLetterSelect = (letter) => {
     setShowBlankModal(false)
 
-    // Set selected tile with the chosen letter
     setSelectedTile({
       rackIndex: pendingBlankTile.rackIndex,
       letter: ' ',
@@ -548,7 +302,6 @@ export default function ScrabbleGame() {
       }))
       const scoreToShow = preview?.score || 0
       await api.playScrabbleMove(id, tiles)
-      // Refresh to get the updated game state with correct last move highlighting
       await loadGame()
       setMessage(`+${scoreToShow} points!`)
       setTimeout(() => setMessage(''), 3000)
@@ -616,21 +369,18 @@ export default function ScrabbleGame() {
   }
 
   const handleShuffle = () => {
-    // Fisher-Yates shuffle for available tiles only
     const usedIndices = new Set(placedTiles.map(t => t.rackIndex))
     const newRack = [...rack]
 
-    // Get indices of available tiles
     const availableIndices = newRack
       .map((_, idx) => idx)
       .filter(idx => !usedIndices.has(idx))
 
-    // Shuffle available tiles among themselves
     for (let i = availableIndices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       const idxI = availableIndices[i]
       const idxJ = availableIndices[j]
-        ;[newRack[idxI], newRack[idxJ]] = [newRack[idxJ], newRack[idxI]]
+      ;[newRack[idxI], newRack[idxJ]] = [newRack[idxJ], newRack[idxI]]
     }
 
     setRack(newRack)
@@ -686,7 +436,7 @@ export default function ScrabbleGame() {
 
   if (loading) {
     return (
-      <div className="page">
+      <div className="page scrabble-page">
         <Header />
         <main className="container main-content">
           <p>Loading...</p>
@@ -697,7 +447,7 @@ export default function ScrabbleGame() {
 
   if (!game) {
     return (
-      <div className="page">
+      <div className="page scrabble-page">
         <Header />
         <main className="container main-content">
           <p>Game not found</p>
@@ -712,7 +462,12 @@ export default function ScrabbleGame() {
   const opponent = getOpponent()
   const scores = getScores()
   const availableTiles = getAvailableRackTiles()
-  const canvasSize = BOARD_SIZE * TILE_SIZE + BOARD_PADDING * 2
+  const board = game?.board || []
+
+  // Build tile data for rendering
+  const allTiles = buildTileMap()
+  const tileSet = new Set(allTiles.map(t => `${t.row},${t.col}`))
+  const tileMap = new Map(allTiles.map(t => [`${t.row},${t.col}`, t]))
 
   const getEndStatusText = () => {
     if (game.status !== 'active') {
@@ -721,54 +476,105 @@ export default function ScrabbleGame() {
     return null
   }
 
+  // Get CSS classes for a cell
+  const getCellClass = (row, col) => {
+    const bonus = BONUS_SQUARES[row][col]
+    const tileKey = `${row},${col}`
+    const tile = tileMap.get(tileKey)
+    const hasTile = !!tile
+
+    const classes = ['scrabble-cell', BONUS_CLASSES[bonus]]
+
+    if (!hasTile && isYourTurn && game.status === 'active') {
+      classes.push('clickable')
+    }
+
+    return classes.join(' ')
+  }
+
+  // Get CSS classes for a tile
+  const getTileClass = (tile, neighbors) => {
+    const classes = ['scrabble-tile']
+
+    if (tile.isNew) classes.push('new-tile')
+    else if (tile.isLastMove) classes.push('last-move-tile')
+
+    // Add neighbor classes for connected rendering
+    if (neighbors.top) classes.push('connected-top')
+    if (neighbors.bottom) classes.push('connected-bottom')
+    if (neighbors.left) classes.push('connected-left')
+    if (neighbors.right) classes.push('connected-right')
+
+    return classes.join(' ')
+  }
+
+  // Get play button text based on game state
+  const getPlayButtonText = () => {
+    if (game.status !== 'active') {
+      return game.winner_id === user?.id ? 'Won!' : game.winner_id ? 'Lost' : 'Draw'
+    }
+    if (!isYourTurn) return 'Waiting'
+    if (preview?.valid) return `Play +${preview.score}`
+    return 'Play'
+  }
+
+  const isPlayDisabled = () => {
+    if (game.status !== 'active') return true
+    if (!isYourTurn) return true
+    return !preview?.valid
+  }
+
   return (
     <div className="page scrabble-page">
       <Header />
       <main className="scrabble-container">
-        {/* Combined header */}
-        <div className="scrabble-header">
-          {/* <button className="btn btn-secondary btn-small header-back" onClick={() => navigate('/scrabble')}>
-            Back
-          </button> */}
-          <div className="scrabble-header-scores">
-            <span className={`header-score you ${game.status === 'active' && isYourTurn ? 'current-turn' : ''}`}>
-              {truncateName('You')}: {scores.you}
-            </span>
-            {/* <span className="header-divider">|</span> */}
-            <span className="header-bag">{tilesRemaining}</span>
-
-            {/* <span className="header-divider">|</span> */}
-            <span className={`header-score them ${game.status === 'active' && !isYourTurn ? 'current-turn' : ''}`}>
-              {truncateName(opponent?.username)}: {scores.them}
-            </span>
-          </div>
-          <div className="scrabble-header-status">
-            {getEndStatusText() && (
-              <span className="header-status ended">{getEndStatusText()}</span>
-            )}
-            {/* message && <span className="header-message">{message}</span> */}
-            {/* error && <span className="header-error">{error}</span> */}
-          </div>
-        </div>
+        {error && <div className="alert alert-error">{error}</div>}
 
         {/* Board */}
         <div className="scrabble-board-container">
-          <div
-            className={`scrabble-board-wrapper ${isZoomedIn ? 'zoomed-in' : 'zoomed-out'}`}
-            onTouchStart={handleDoubleTap}
-            onDoubleClick={() => setIsZoomedIn(prev => !prev)}
-          >
-            <canvas
-              ref={canvasRef}
-              width={canvasSize}
-              height={canvasSize}
-              onClick={handleCanvasClick}
-              className="scrabble-board"
-            />
+          <div className="scrabble-board-wrapper">
+            <div className="scrabble-board">
+              {Array.from({ length: BOARD_SIZE }).map((_, row) => (
+                <div key={row} className="scrabble-row">
+                  {Array.from({ length: BOARD_SIZE }).map((_, col) => {
+                    const tileKey = `${row},${col}`
+                    const tile = tileMap.get(tileKey)
+                    const bonus = BONUS_SQUARES[row][col]
+                    const neighbors = getTileNeighbors(row, col, tileSet)
+
+                    return (
+                      <div
+                        key={col}
+                        className={getCellClass(row, col)}
+                        onClick={() => handleCellClick(row, col)}
+                      >
+                        {/* Bonus label (only if no tile) */}
+                        {!tile && bonus > 0 && (
+                          <span className="bonus-label">{BONUS_LABELS[bonus]}</span>
+                        )}
+
+                        {/* Tile */}
+                        {tile && (
+                          <div className={getTileClass(tile, neighbors)}>
+                            <span className="tile-letter">
+                              {tile.letter === ' ' ? '' : tile.letter}
+                            </span>
+                            {tile.value > 0 && (
+                              <span className="tile-points">{tile.value}</span>
+                            )}
+                            {tile.isBlank && tile.letter !== ' ' && (
+                              <span className="blank-underline" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-
-
 
         {/* Rack */}
         <div className="scrabble-rack">
@@ -795,70 +601,62 @@ export default function ScrabbleGame() {
           })}
         </div>
 
-        {/* Actions */}
-        {game.status === 'active' && isYourTurn && (
-          <div className="scrabble-actions">
-            <div className="actions-left">
-              <div className="dropup-container" ref={moreMenuRef}>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setShowMoreMenu(!showMoreMenu)}
-                >
-                  More
-                </button>
-                {showMoreMenu && (
-                  <div className="dropup-menu">
-                    <button onClick={handlePass}>Pass</button>
-                    <button onClick={handleResign} className="danger">Resign</button>
-                    <button onClick={handleOpenTileBag}>Tile Bag</button>
-                    <button onClick={handleOpenHistory}>History</button>
-                  </div>
-                )}
-              </div>
+        {/* Unified Action Bar */}
+        <div className="scrabble-actions">
+          <div className="actions-left">
+            <div className="dropup-container" ref={moreMenuRef}>
               <button
-                className="btn btn-secondary"
-                onClick={() => {
-                  setShowExchangeModal(true)
-                  setExchangeSelection([])
-                }}
+                className="btn btn-secondary btn-icon"
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
               >
-                Swap
+                ···
               </button>
-              <button className="btn btn-secondary" onClick={handleShuffle}>
-                Shuffle
-              </button>
+              {showMoreMenu && (
+                <div className="dropup-menu">
+                  {game.status === 'active' && isYourTurn && (
+                    <>
+                      <button onClick={handlePass}>Pass</button>
+                      <button onClick={handleResign} className="danger">Resign</button>
+                    </>
+                  )}
+                  <button onClick={handleOpenTileBag}>Tile Bag</button>
+                  <button onClick={handleOpenHistory}>History</button>
+                </div>
+              )}
             </div>
-            <button
-              className="btn btn-primary btn-play"
-              onClick={handleSubmit}
-              disabled={!preview?.valid}
-            >
-              Play
-            </button>
-          </div>
-        )}
-
-        {/* Actions when not your turn or game ended */}
-        {(game.status !== 'active' || !isYourTurn) && (
-          <div className="scrabble-actions">
-            <div className="actions-left">
-              <div className="dropup-container" ref={moreMenuRef}>
+            {game.status === 'active' && isYourTurn && (
+              <>
                 <button
-                  className="btn btn-secondary"
-                  onClick={() => setShowMoreMenu(!showMoreMenu)}
+                  className="btn btn-secondary btn-icon"
+                  onClick={() => {
+                    setShowExchangeModal(true)
+                    setExchangeSelection([])
+                  }}
+                  title="Swap tiles"
                 >
-                  More
+                  ⇄
                 </button>
-                {showMoreMenu && (
-                  <div className="dropup-menu">
-                    <button onClick={handleOpenTileBag}>Tile Bag</button>
-                    <button onClick={handleOpenHistory}>History</button>
-                  </div>
-                )}
-              </div>
-            </div>
+                <button className="btn btn-secondary btn-icon" onClick={handleShuffle} title="Shuffle rack">
+                  ↻
+                </button>
+              </>
+            )}
           </div>
-        )}
+
+          <div className="actions-scores">
+            <span className={`score-you ${isYourTurn ? 'active' : ''}`}>{scores.you}</span>
+            <span className="score-bag">{tilesRemaining}</span>
+            <span className={`score-them ${!isYourTurn && game.status === 'active' ? 'active' : ''}`}>{scores.them}</span>
+          </div>
+
+          <button
+            className={`btn btn-play ${isPlayDisabled() ? 'btn-disabled' : 'btn-primary'}`}
+            onClick={handleSubmit}
+            disabled={isPlayDisabled()}
+          >
+            {getPlayButtonText()}
+          </button>
+        </div>
 
         {/* Blank Tile Letter Picker Modal */}
         {showBlankModal && (

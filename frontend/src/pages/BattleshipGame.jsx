@@ -35,6 +35,7 @@ export default function BattleshipGame() {
   const [isHorizontal, setIsHorizontal] = useState(true)
   const [placedShips, setPlacedShips] = useState([])
   const [hoverCells, setHoverCells] = useState([])
+  const [previewPosition, setPreviewPosition] = useState(null) // { row, col } for mobile tap-to-preview
 
   // Firing state
   const [selectedTarget, setSelectedTarget] = useState(null) // { row, col }
@@ -145,19 +146,27 @@ export default function BattleshipGame() {
     if (!placingShip) return
 
     const { valid, cells } = isValidPlacement(row, col, placingShip.size, isHorizontal)
-    if (!valid) return
 
-    const newShip = {
-      type: placingShip.type,
-      size: placingShip.size,
-      start_row: row,
-      start_col: col,
-      horizontal: isHorizontal,
+    // If tapping the same position as preview and it's valid, place the ship
+    if (previewPosition && previewPosition.row === row && previewPosition.col === col && valid) {
+      const newShip = {
+        type: placingShip.type,
+        size: placingShip.size,
+        start_row: row,
+        start_col: col,
+        horizontal: isHorizontal,
+      }
+
+      setPlacedShips([...placedShips, newShip])
+      setPlacingShip(null)
+      setHoverCells([])
+      setPreviewPosition(null)
+      return
     }
 
-    setPlacedShips([...placedShips, newShip])
-    setPlacingShip(null)
-    setHoverCells([])
+    // Otherwise, show preview at this position (works for both mobile tap and desktop click)
+    setPreviewPosition({ row, col })
+    setHoverCells(cells.map(c => ({ ...c, valid })))
   }
 
   const handleRemoveShip = (shipType) => {
@@ -193,6 +202,7 @@ export default function BattleshipGame() {
 
     // Wait for bomb animation to complete
     await new Promise(resolve => setTimeout(resolve, 600))
+    if (valid && navigator.vibrate) navigator.vibrate(10)
 
     try {
       const result = await api.fireBattleshipShot(id, selectedTarget.row, selectedTarget.col)
@@ -345,7 +355,15 @@ export default function BattleshipGame() {
               <span>Ships to Place</span>
               <button
                 className="btn btn-secondary btn-small"
-                onClick={() => setIsHorizontal(!isHorizontal)}
+                onClick={() => {
+                  const newHorizontal = !isHorizontal
+                  setIsHorizontal(newHorizontal)
+                  // Update preview with new orientation if there's a preview position
+                  if (previewPosition && placingShip) {
+                    const { valid, cells } = isValidPlacement(previewPosition.row, previewPosition.col, placingShip.size, newHorizontal)
+                    setHoverCells(cells.map(c => ({ ...c, valid })))
+                  }
+                }}
               >
                 {isHorizontal ? 'Horizontal' : 'Vertical'}
               </button>
@@ -355,7 +373,11 @@ export default function BattleshipGame() {
                 <button
                   key={ship.type}
                   className={`ship-btn ${placingShip?.type === ship.type ? 'selected' : ''}`}
-                  onClick={() => setPlacingShip(ship)}
+                  onClick={() => {
+                    setPlacingShip(ship)
+                    setPreviewPosition(null)
+                    setHoverCells([])
+                  }}
                 >
                   <span className="ship-name">{ship.name}</span>
                   <span className="ship-size">
