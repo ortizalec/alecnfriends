@@ -149,6 +149,8 @@ func migrate(db *sql.DB) error {
 			status TEXT NOT NULL DEFAULT 'setup',
 			winner_id INTEGER,
 			max_guesses INTEGER DEFAULT 10,
+			num_colors INTEGER DEFAULT 6,
+			allow_repeats INTEGER DEFAULT 1,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -186,6 +188,15 @@ func migrate(db *sql.DB) error {
 		if _, err := db.Exec(m); err != nil {
 			return fmt.Errorf("migration failed: %w", err)
 		}
+	}
+
+	// Optional migrations that may fail if columns already exist
+	optionalMigrations := []string{
+		`ALTER TABLE mastermind_games ADD COLUMN num_colors INTEGER DEFAULT 6`,
+		`ALTER TABLE mastermind_games ADD COLUMN allow_repeats INTEGER DEFAULT 1`,
+	}
+	for _, m := range optionalMigrations {
+		db.Exec(m) // Ignore errors - column may already exist
 	}
 
 	return nil

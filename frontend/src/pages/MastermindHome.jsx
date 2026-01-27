@@ -13,28 +13,27 @@ export default function MastermindHome() {
   const [error, setError] = useState('')
   const [showNewGameModal, setShowNewGameModal] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [selectedFriend, setSelectedFriend] = useState(null)
+  const [numColors, setNumColors] = useState(6)
+  const [allowRepeats, setAllowRepeats] = useState(true)
 
   useEffect(() => {
     loadData()
   }, [])
 
-  // Poll for updates every 20 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       loadData()
     }, 20000)
-
     return () => clearInterval(interval)
   }, [])
 
-  // Refresh when tab becomes visible
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         loadData()
       }
     }
-
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [])
@@ -54,12 +53,14 @@ export default function MastermindHome() {
     }
   }
 
-  const handleNewGame = async (friendId) => {
+  const handleStartGame = async () => {
+    if (!selectedFriend) return
     setCreating(true)
     setError('')
     try {
-      const result = await api.createMastermindGame(friendId)
+      const result = await api.createMastermindGame(selectedFriend, numColors, allowRepeats)
       setShowNewGameModal(false)
+      setSelectedFriend(null)
       navigate(`/mastermind/${result.game.id}`)
     } catch (err) {
       setError(err.message)
@@ -68,11 +69,24 @@ export default function MastermindHome() {
     }
   }
 
+  const closeModal = () => {
+    setShowNewGameModal(false)
+    setSelectedFriend(null)
+    setNumColors(6)
+    setAllowRepeats(true)
+  }
+
   const getOpponent = (game) => {
     if (game.player1_id === user?.id) {
       return game.player2
     }
     return game.player1
+  }
+
+  const getDifficultyLabel = (game) => {
+    const colors = game.num_colors || 6
+    const repeats = game.allow_repeats !== false
+    return `${colors}C${repeats ? '' : ' NR'}`
   }
 
   const GameCard = ({ game, showStatus }) => {
@@ -83,12 +97,6 @@ export default function MastermindHome() {
     const isYourTurn = game.current_turn === user?.id && game.status === 'active'
     const isSetup = game.status === 'setup'
 
-    const getStatusText = () => {
-      if (isSetup) return 'Setup Phase'
-      if (game.status === 'active') return 'In Progress'
-      return ''
-    }
-
     return (
       <li
         className="game-card"
@@ -96,7 +104,9 @@ export default function MastermindHome() {
       >
         <div className="game-card-main">
           <span className="game-card-opponent">{opponent?.username}</span>
-          <span className="game-card-score">{getStatusText()}</span>
+          <span className="game-card-score text-muted" style={{ fontSize: '0.75rem' }}>
+            {getDifficultyLabel(game)}
+          </span>
         </div>
         <div className="game-card-status">
           {showStatus && game.status === 'completed' ? (
@@ -146,7 +156,6 @@ export default function MastermindHome() {
 
         {error && <div className="alert alert-error">{error}</div>}
 
-        {/* Your Turn */}
         {yourTurnGames.length > 0 && (
           <section className="game-section">
             <h2 className="section-label">Your Turn</h2>
@@ -158,7 +167,6 @@ export default function MastermindHome() {
           </section>
         )}
 
-        {/* Their Turn */}
         {theirTurnGames.length > 0 && (
           <section className="game-section">
             <h2 className="section-label">Their Turn</h2>
@@ -170,7 +178,6 @@ export default function MastermindHome() {
           </section>
         )}
 
-        {/* Completed */}
         {completedGames.length > 0 && (
           <section className="game-section">
             <h2 className="section-label">Completed</h2>
@@ -189,35 +196,76 @@ export default function MastermindHome() {
           </div>
         )}
 
-        {/* New Game Modal */}
         {showNewGameModal && (
           <>
-            <div className="modal-overlay" onClick={() => setShowNewGameModal(false)} />
+            <div className="modal-overlay" onClick={closeModal} />
             <div className="modal">
               <h2 className="modal-title">New Game</h2>
               {friends.length === 0 ? (
                 <p className="text-muted">Add some friends first to start a game.</p>
               ) : (
                 <>
-                  <p className="modal-subtitle">Choose an opponent</p>
+                  <p className="modal-subtitle">Opponent</p>
                   <ul className="friend-select-list">
                     {friends.map((friendship) => (
                       <li key={friendship.id}>
                         <button
-                          className="friend-select-btn"
-                          onClick={() => handleNewGame(friendship.friend_id)}
-                          disabled={creating}
+                          className={`friend-select-btn ${selectedFriend === friendship.friend_id ? 'selected' : ''}`}
+                          onClick={() => setSelectedFriend(friendship.friend_id)}
                         >
                           {friendship.friend?.username}
                         </button>
                       </li>
                     ))}
                   </ul>
+
+                  <p className="modal-subtitle mt-2">Difficulty</p>
+                  <div className="difficulty-options">
+                    <div className="option-group">
+                      <span className="option-label">Colors:</span>
+                      <div className="option-buttons">
+                        {[4, 6, 8].map((n) => (
+                          <button
+                            key={n}
+                            className={`option-btn ${numColors === n ? 'selected' : ''}`}
+                            onClick={() => setNumColors(n)}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="option-group">
+                      <span className="option-label">Repeats:</span>
+                      <div className="option-buttons">
+                        <button
+                          className={`option-btn ${allowRepeats ? 'selected' : ''}`}
+                          onClick={() => setAllowRepeats(true)}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          className={`option-btn ${!allowRepeats ? 'selected' : ''}`}
+                          onClick={() => setAllowRepeats(false)}
+                        >
+                          No
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    className="btn btn-primary btn-full mt-2"
+                    onClick={handleStartGame}
+                    disabled={!selectedFriend || creating}
+                  >
+                    {creating ? 'Creating...' : 'Start Game'}
+                  </button>
                 </>
               )}
               <button
-                className="btn btn-secondary btn-full mt-2"
-                onClick={() => setShowNewGameModal(false)}
+                className="btn btn-secondary btn-full mt-1"
+                onClick={closeModal}
               >
                 Cancel
               </button>

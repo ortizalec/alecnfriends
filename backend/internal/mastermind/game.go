@@ -6,26 +6,40 @@ import (
 )
 
 const (
-	NumColors  = 8
 	CodeLength = 4
 	MaxGuesses = 10
 )
 
 var Colors = []string{"red", "orange", "yellow", "green", "blue", "purple", "pink", "brown"}
 
-// ValidateCode checks if the code is valid (4 colors, each 0-7)
-func ValidateCode(code []int) error {
+// ValidateCode checks if the code is valid
+func ValidateCode(code []int, numColors int, allowRepeats bool) error {
 	if len(code) != CodeLength {
 		return errors.New("code must have exactly 4 colors")
 	}
 
+	seen := make(map[int]bool)
 	for i, c := range code {
-		if c < 0 || c >= NumColors {
+		if c < 0 || c >= numColors {
 			return errors.New("invalid color index at position " + string(rune('1'+i)))
+		}
+		if !allowRepeats {
+			if seen[c] {
+				return errors.New("duplicate colors not allowed")
+			}
+			seen[c] = true
 		}
 	}
 
 	return nil
+}
+
+// ValidateNumColors ensures num_colors is valid (4, 6, or 8)
+func ValidateNumColors(n int) int {
+	if n == 4 || n == 6 || n == 8 {
+		return n
+	}
+	return 6 // default
 }
 
 // EvaluateGuess compares guess against secret and returns feedback

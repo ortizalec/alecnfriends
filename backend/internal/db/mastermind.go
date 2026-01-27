@@ -7,11 +7,11 @@ import (
 	"altech/internal/models"
 )
 
-func CreateMastermindGame(db *sql.DB, player1ID, player2ID int64) (*models.MastermindGame, error) {
+func CreateMastermindGame(db *sql.DB, player1ID, player2ID int64, numColors int, allowRepeats bool) (*models.MastermindGame, error) {
 	result, err := db.Exec(`
-		INSERT INTO mastermind_games (player1_id, player2_id, current_turn, status, max_guesses)
-		VALUES (?, ?, ?, 'setup', 10)
-	`, player1ID, player2ID, player1ID)
+		INSERT INTO mastermind_games (player1_id, player2_id, current_turn, status, max_guesses, num_colors, allow_repeats)
+		VALUES (?, ?, ?, 'setup', 10, ?, ?)
+	`, player1ID, player2ID, player1ID, numColors, allowRepeats)
 	if err != nil {
 		return nil, err
 	}
@@ -29,11 +29,12 @@ func GetMastermindGame(db *sql.DB, gameID int64) (*models.MastermindGame, error)
 	var winnerID sql.NullInt64
 
 	err := db.QueryRow(`
-		SELECT id, player1_id, player2_id, current_turn, status, winner_id, max_guesses, created_at, updated_at
+		SELECT id, player1_id, player2_id, current_turn, status, winner_id, max_guesses, num_colors, allow_repeats, created_at, updated_at
 		FROM mastermind_games WHERE id = ?
 	`, gameID).Scan(
 		&game.ID, &game.Player1ID, &game.Player2ID, &game.CurrentTurn,
-		&game.Status, &winnerID, &game.MaxGuesses, &game.CreatedAt, &game.UpdatedAt,
+		&game.Status, &winnerID, &game.MaxGuesses, &game.NumColors, &game.AllowRepeats,
+		&game.CreatedAt, &game.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, ErrGameNotFound
@@ -55,7 +56,7 @@ func GetMastermindGame(db *sql.DB, gameID int64) (*models.MastermindGame, error)
 
 func GetMastermindGamesForUser(db *sql.DB, userID int64) ([]models.MastermindGame, error) {
 	rows, err := db.Query(`
-		SELECT g.id, g.player1_id, g.player2_id, g.current_turn, g.status, g.winner_id, g.max_guesses, g.created_at, g.updated_at
+		SELECT g.id, g.player1_id, g.player2_id, g.current_turn, g.status, g.winner_id, g.max_guesses, g.num_colors, g.allow_repeats, g.created_at, g.updated_at
 		FROM mastermind_games g
 		WHERE g.player1_id = ? OR g.player2_id = ?
 		ORDER BY g.updated_at DESC
@@ -72,7 +73,8 @@ func GetMastermindGamesForUser(db *sql.DB, userID int64) ([]models.MastermindGam
 
 		err := rows.Scan(
 			&game.ID, &game.Player1ID, &game.Player2ID, &game.CurrentTurn,
-			&game.Status, &winnerID, &game.MaxGuesses, &game.CreatedAt, &game.UpdatedAt,
+			&game.Status, &winnerID, &game.MaxGuesses, &game.NumColors, &game.AllowRepeats,
+			&game.CreatedAt, &game.UpdatedAt,
 		)
 		if err != nil {
 			return nil, err

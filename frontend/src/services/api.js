@@ -355,10 +355,10 @@ class ApiService {
     return response.json()
   }
 
-  async createMastermindGame(opponentId) {
+  async createMastermindGame(opponentId, numColors = 6, allowRepeats = true) {
     const response = await this.request('/mastermind/games', {
       method: 'POST',
-      body: JSON.stringify({ opponent_id: opponentId }),
+      body: JSON.stringify({ opponent_id: opponentId, num_colors: numColors, allow_repeats: allowRepeats }),
     })
     const data = await response.json()
     if (!response.ok) {

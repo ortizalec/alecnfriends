@@ -4,15 +4,15 @@ import Header from '../components/Header'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 
-const COLORS = [
-  { name: 'red', hex: '#e53935' },
-  { name: 'orange', hex: '#fb8c00' },
-  { name: 'yellow', hex: '#fdd835' },
-  { name: 'green', hex: '#43a047' },
-  { name: 'blue', hex: '#1e88e5' },
-  { name: 'purple', hex: '#8e24aa' },
-  { name: 'pink', hex: '#ec407a' },
-  { name: 'brown', hex: '#6d4c41' },
+const ALL_COLORS = [
+  { name: 'red', hex: '#c62828' },
+  { name: 'orange', hex: '#ef6c00' },
+  { name: 'yellow', hex: '#f9a825' },
+  { name: 'green', hex: '#2e7d32' },
+  { name: 'blue', hex: '#1565c0' },
+  { name: 'purple', hex: '#6a1b9a' },
+  { name: 'pink', hex: '#ad1457' },
+  { name: 'brown', hex: '#4e342e' },
 ]
 
 const CODE_LENGTH = 4
@@ -36,13 +36,9 @@ export default function MastermindGame() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
-  // Setup state
-  const [setupCode, setSetupCode] = useState([null, null, null, null])
+  // Setup/guess state
+  const [currentCode, setCurrentCode] = useState([null, null, null, null])
   const [selectedSlot, setSelectedSlot] = useState(0)
-
-  // Guess state
-  const [currentGuess, setCurrentGuess] = useState([null, null, null, null])
-  const [selectedGuessSlot, setSelectedGuessSlot] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const loadGame = useCallback(async () => {
@@ -68,25 +64,18 @@ export default function MastermindGame() {
     loadGame()
   }, [loadGame])
 
-  // Poll for updates when waiting
   useEffect(() => {
     if (!game || phase === 'completed') return
     if (phase === 'active' && isYourTurn) return
     if (phase === 'setup' && !secretSet) return
 
-    const interval = setInterval(() => {
-      loadGame()
-    }, 5000)
-
+    const interval = setInterval(loadGame, 5000)
     return () => clearInterval(interval)
   }, [game, phase, isYourTurn, secretSet, loadGame])
 
-  // Refresh when tab becomes visible
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        loadGame()
-      }
+      if (document.visibilityState === 'visible') loadGame()
     }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
@@ -97,35 +86,42 @@ export default function MastermindGame() {
     return game.player1_id === user.id ? game.player2 : game.player1
   }
 
-  const handleSetupColorSelect = (colorIndex) => {
-    const newCode = [...setupCode]
+  const numColors = game?.num_colors || 6
+  const allowRepeats = game?.allow_repeats !== false
+  const colors = ALL_COLORS.slice(0, numColors)
+
+  const handleColorSelect = (colorIndex) => {
+    if (!allowRepeats && currentCode.includes(colorIndex) && currentCode[selectedSlot] !== colorIndex) {
+      return // Can't use same color twice
+    }
+    const newCode = [...currentCode]
     newCode[selectedSlot] = colorIndex
-    setSetupCode(newCode)
-    // Auto-advance to next slot
+    setCurrentCode(newCode)
     if (selectedSlot < CODE_LENGTH - 1) {
       setSelectedSlot(selectedSlot + 1)
     }
   }
 
-  const handleSetupSlotClick = (index) => {
+  const handleSlotClick = (index) => {
     setSelectedSlot(index)
   }
 
-  const handleClearSetup = () => {
-    setSetupCode([null, null, null, null])
+  const handleClear = () => {
+    setCurrentCode([null, null, null, null])
     setSelectedSlot(0)
   }
 
   const handleSubmitSecret = async () => {
-    if (setupCode.some(c => c === null)) return
-
+    if (currentCode.some(c => c === null)) return
     setError('')
     setIsSubmitting(true)
     try {
-      await api.setMastermindSecret(id, setupCode)
+      await api.setMastermindSecret(id, currentCode)
+      setCurrentCode([null, null, null, null])
+      setSelectedSlot(0)
       await loadGame()
-      setMessage('Secret code set! Waiting for opponent...')
-      setTimeout(() => setMessage(''), 3000)
+      setMessage('Secret set!')
+      setTimeout(() => setMessage(''), 2000)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -133,46 +129,23 @@ export default function MastermindGame() {
     }
   }
 
-  const handleGuessColorSelect = (colorIndex) => {
-    const newGuess = [...currentGuess]
-    newGuess[selectedGuessSlot] = colorIndex
-    setCurrentGuess(newGuess)
-    // Auto-advance to next slot
-    if (selectedGuessSlot < CODE_LENGTH - 1) {
-      setSelectedGuessSlot(selectedGuessSlot + 1)
-    }
-  }
-
-  const handleGuessSlotClick = (index) => {
-    setSelectedGuessSlot(index)
-  }
-
-  const handleClearGuess = () => {
-    setCurrentGuess([null, null, null, null])
-    setSelectedGuessSlot(0)
-  }
-
   const handleSubmitGuess = async () => {
-    if (currentGuess.some(c => c === null) || isSubmitting) return
-
+    if (currentCode.some(c => c === null) || isSubmitting) return
     setError('')
     setIsSubmitting(true)
     try {
-      const result = await api.makeMastermindGuess(id, currentGuess)
-      setCurrentGuess([null, null, null, null])
-      setSelectedGuessSlot(0)
-
-      // Check the latest guess for feedback message
+      const result = await api.makeMastermindGuess(id, currentCode)
+      setCurrentCode([null, null, null, null])
+      setSelectedSlot(0)
       const latestGuess = result.my_guesses[result.my_guesses.length - 1]
       if (latestGuess) {
         if (latestGuess.correct === CODE_LENGTH) {
-          setMessage('You cracked the code!')
+          setMessage('Cracked!')
         } else {
-          setMessage(`${latestGuess.correct} correct, ${latestGuess.misplaced} misplaced`)
+          setMessage(`${latestGuess.correct} exact, ${latestGuess.misplaced} misplaced`)
         }
-        setTimeout(() => setMessage(''), 3000)
+        setTimeout(() => setMessage(''), 2000)
       }
-
       await loadGame()
     } catch (err) {
       setError(err.message)
@@ -182,9 +155,7 @@ export default function MastermindGame() {
   }
 
   const handleResign = async () => {
-    if (!window.confirm('Resign this game?')) return
-    setError('')
-
+    if (!window.confirm('Resign?')) return
     try {
       await api.resignMastermindGame(id)
       await loadGame()
@@ -193,76 +164,41 @@ export default function MastermindGame() {
     }
   }
 
-  const renderPeg = (colorIndex, size = 'normal', onClick = null, isSelected = false) => {
-    const color = colorIndex !== null && colorIndex !== undefined ? COLORS[colorIndex] : null
-    const sizeClass = size === 'small' ? 'mastermind-peg-small' : 'mastermind-peg'
+  const Peg = ({ colorIndex, size = 'md', selected = false, onClick = null, disabled = false }) => {
+    const color = colorIndex !== null ? colors[colorIndex] : null
+    const sizeClass = size === 'sm' ? 'mm-peg-sm' : size === 'xs' ? 'mm-peg-xs' : 'mm-peg'
     return (
       <div
-        className={`${sizeClass} ${isSelected ? 'selected' : ''} ${onClick ? 'clickable' : ''}`}
-        style={{ backgroundColor: color ? color.hex : 'transparent' }}
-        onClick={onClick}
+        className={`${sizeClass} ${selected ? 'selected' : ''} ${onClick && !disabled ? 'clickable' : ''} ${disabled ? 'disabled' : ''}`}
+        style={{ backgroundColor: color ? color.hex : undefined }}
+        onClick={onClick && !disabled ? onClick : undefined}
       />
     )
   }
 
-  const renderFeedback = (correct, misplaced) => {
-    const pegs = []
-    for (let i = 0; i < correct; i++) {
-      pegs.push(<div key={`c${i}`} className="feedback-peg correct" />)
-    }
-    for (let i = 0; i < misplaced; i++) {
-      pegs.push(<div key={`m${i}`} className="feedback-peg misplaced" />)
-    }
-    // Fill empty slots
-    for (let i = correct + misplaced; i < CODE_LENGTH; i++) {
-      pegs.push(<div key={`e${i}`} className="feedback-peg empty" />)
-    }
-    return <div className="feedback-container">{pegs}</div>
-  }
+  const Feedback = ({ correct, misplaced }) => (
+    <div className="mm-feedback">
+      {Array(correct).fill(0).map((_, i) => <div key={`c${i}`} className="fb-dot exact" />)}
+      {Array(misplaced).fill(0).map((_, i) => <div key={`m${i}`} className="fb-dot partial" />)}
+      {Array(CODE_LENGTH - correct - misplaced).fill(0).map((_, i) => <div key={`e${i}`} className="fb-dot" />)}
+    </div>
+  )
 
-  const renderGuessRow = (guess, index, isOpponent = false) => {
-    return (
-      <div key={guess.id || index} className={`mastermind-row ${isOpponent ? 'opponent' : ''}`}>
-        <span className="row-number">{guess.guess_number}</span>
-        <div className="guess-pegs">
-          {guess.guess.map((colorIndex, i) => (
-            <div key={i}>{renderPeg(colorIndex)}</div>
-          ))}
-        </div>
-        {renderFeedback(guess.correct, guess.misplaced)}
+  const GuessRow = ({ guess }) => (
+    <div className="mm-row">
+      <span className="mm-row-num">{guess.guess_number}</span>
+      <div className="mm-pegs">
+        {guess.guess.map((c, i) => <Peg key={i} colorIndex={c} size="sm" />)}
       </div>
-    )
-  }
-
-  const renderEmptyRows = (count, startNumber) => {
-    const rows = []
-    for (let i = 0; i < count; i++) {
-      rows.push(
-        <div key={`empty-${i}`} className="mastermind-row empty">
-          <span className="row-number">{startNumber + i}</span>
-          <div className="guess-pegs">
-            {Array(CODE_LENGTH).fill(null).map((_, j) => (
-              <div key={j} className="mastermind-peg empty" />
-            ))}
-          </div>
-          <div className="feedback-container">
-            {Array(CODE_LENGTH).fill(null).map((_, j) => (
-              <div key={j} className="feedback-peg empty" />
-            ))}
-          </div>
-        </div>
-      )
-    }
-    return rows
-  }
+      <Feedback correct={guess.correct} misplaced={guess.misplaced} />
+    </div>
+  )
 
   if (loading) {
     return (
       <div className="page mastermind-page">
         <Header />
-        <main className="container main-content">
-          <p className="mastermind-loading">Loading...</p>
-        </main>
+        <main className="mm-container"><p className="mm-loading">Loading...</p></main>
       </div>
     )
   }
@@ -271,11 +207,9 @@ export default function MastermindGame() {
     return (
       <div className="page mastermind-page">
         <Header />
-        <main className="container main-content">
-          <p className="mastermind-loading">Game not found</p>
-          <button className="btn btn-primary mt-2" onClick={() => navigate('/mastermind')}>
-            Back to Games
-          </button>
+        <main className="mm-container">
+          <p className="mm-loading">Game not found</p>
+          <button className="btn btn-primary" onClick={() => navigate('/mastermind')}>Back</button>
         </main>
       </div>
     )
@@ -283,54 +217,51 @@ export default function MastermindGame() {
 
   const opponent = getOpponent()
 
-  // Setup Phase - Set Secret Code
+  // Setup: Set secret
   if (phase === 'setup' && !secretSet) {
     return (
       <div className="page mastermind-page">
         <Header />
-        <main className="mastermind-container">
-          <div className="mastermind-header">
-            <h2>Set Your Secret Code</h2>
-            <p className="mastermind-subtitle">Choose 4 colors for your opponent to guess</p>
+        <main className="mm-container">
+          <div className="mm-header">
+            <h2>Set Your Code</h2>
+            <p className="mm-sub">{numColors} colors, {allowRepeats ? 'repeats OK' : 'no repeats'}</p>
           </div>
 
           {error && <div className="alert alert-error">{error}</div>}
 
-          <div className="mastermind-setup">
-            <div className="secret-code-display">
-              {setupCode.map((colorIndex, i) => (
-                <div
-                  key={i}
-                  className={`setup-slot ${selectedSlot === i ? 'selected' : ''}`}
-                  onClick={() => handleSetupSlotClick(i)}
-                >
-                  {renderPeg(colorIndex, 'normal', null, selectedSlot === i)}
+          <div className="mm-input-area">
+            <div className="mm-slots">
+              {currentCode.map((c, i) => (
+                <div key={i} className={`mm-slot ${selectedSlot === i ? 'selected' : ''}`} onClick={() => handleSlotClick(i)}>
+                  <Peg colorIndex={c} selected={selectedSlot === i} />
                 </div>
               ))}
             </div>
 
-            <div className="color-palette">
-              {COLORS.map((color, i) => (
-                <button
-                  key={i}
-                  className="color-btn"
-                  style={{ backgroundColor: color.hex }}
-                  onClick={() => handleSetupColorSelect(i)}
-                  title={color.name}
-                />
-              ))}
+            <div className="mm-palette">
+              {colors.map((_, i) => {
+                const isUsed = !allowRepeats && currentCode.includes(i) && currentCode[selectedSlot] !== i
+                return (
+                  <button
+                    key={i}
+                    className={`mm-color-btn ${isUsed ? 'used' : ''}`}
+                    style={{ backgroundColor: colors[i].hex }}
+                    onClick={() => handleColorSelect(i)}
+                    disabled={isUsed}
+                  />
+                )
+              })}
             </div>
 
-            <div className="mastermind-actions">
-              <button className="btn btn-secondary" onClick={handleClearGuess}>
-                Clear
-              </button>
+            <div className="mm-actions">
+              <button className="btn btn-secondary btn-small" onClick={handleClear}>Clear</button>
               <button
                 className="btn btn-primary"
                 onClick={handleSubmitSecret}
-                disabled={setupCode.some(c => c === null) || isSubmitting}
+                disabled={currentCode.some(c => c === null) || isSubmitting}
               >
-                {isSubmitting ? 'Setting...' : 'Confirm Secret'}
+                {isSubmitting ? '...' : 'Confirm'}
               </button>
             </div>
           </div>
@@ -339,165 +270,119 @@ export default function MastermindGame() {
     )
   }
 
-  // Waiting for opponent to set secret
+  // Setup: Waiting
   if (phase === 'setup' && secretSet) {
     return (
       <div className="page mastermind-page">
         <Header />
-        <main className="mastermind-container">
-          <div className="mastermind-header">
-            <h2>Waiting for Opponent</h2>
-            <p className="mastermind-subtitle">{opponent?.username} is setting their secret code...</p>
+        <main className="mm-container">
+          <div className="mm-header">
+            <h2>Waiting</h2>
+            <p className="mm-sub">{opponent?.username} is setting their code...</p>
           </div>
-
-          <div className="mastermind-waiting">
-            <div className="your-secret-preview">
-              <span className="label">Your Secret:</span>
-              <div className="secret-pegs">
-                {mySecret.map((colorIndex, i) => (
-                  <div key={i}>{renderPeg(colorIndex)}</div>
-                ))}
-              </div>
-            </div>
+          <div className="mm-your-secret">
+            <span>Your code:</span>
+            <div className="mm-pegs">{mySecret.map((c, i) => <Peg key={i} colorIndex={c} size="sm" />)}</div>
           </div>
         </main>
       </div>
     )
   }
 
-  // Active/Completed game
-  const myGuessCount = myGuesses.length
-  const theirGuessCount = theirGuesses.length
-  const myEmptyRows = MAX_GUESSES - myGuessCount
-  const theirEmptyRows = MAX_GUESSES - theirGuessCount
-
+  // Active / Completed
   return (
     <div className="page mastermind-page">
       <Header />
-      <main className="mastermind-container">
-        {/* Header */}
-        <div className="mastermind-header">
-          <div className="mastermind-status">
-            <span className={`player-name ${!isYourTurn && phase === 'active' ? 'current' : ''}`}>
-              {opponent?.username}
-            </span>
+      <main className="mm-container">
+        <div className="mm-header">
+          <div className="mm-status">
+            <span className={!isYourTurn && phase === 'active' ? 'active' : ''}>{opponent?.username}</span>
             <span className="vs">vs</span>
-            <span className={`player-name ${isYourTurn && phase === 'active' ? 'current' : ''}`}>
-              You
-            </span>
-            {phase === 'completed' && (
-              <span className="game-result">
-                {game.winner_id === user?.id ? 'You Won!' : game.winner_id ? 'You Lost' : 'Draw'}
-              </span>
-            )}
+            <span className={isYourTurn && phase === 'active' ? 'active' : ''}>You</span>
           </div>
-          <div className="round-indicator">Round {round}/{MAX_GUESSES}</div>
+          {phase === 'completed' && (
+            <div className="mm-result">
+              {game.winner_id === user?.id ? 'You Won' : game.winner_id ? 'You Lost' : 'Draw'}
+            </div>
+          )}
+          <div className="mm-info">Round {round}/{MAX_GUESSES} | {numColors}C{allowRepeats ? '' : ' NR'}</div>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
 
-        {/* Boards */}
-        <div className="mastermind-boards">
-          {/* Opponent's guesses (their attempts at your code) */}
-          <div className="mastermind-board opponent-board">
-            <div className="board-header">
-              <span className="board-title">{opponent?.username}'s Guesses</span>
-              <div className="secret-display">
-                <span>Your Code:</span>
-                <div className="mini-code">
-                  {mySecret.map((colorIndex, i) => (
-                    <div key={i}>{renderPeg(colorIndex, 'small')}</div>
-                  ))}
-                </div>
-              </div>
+        <div className="mm-boards">
+          {/* Their guesses at your code */}
+          <div className="mm-board">
+            <div className="mm-board-header">
+              <span>{opponent?.username}'s guesses</span>
+              <div className="mm-mini">{mySecret.map((c, i) => <Peg key={i} colorIndex={c} size="xs" />)}</div>
             </div>
-            <div className="board-rows">
-              {theirGuesses.map((g, i) => renderGuessRow(g, i, true))}
-              {theirEmptyRows > 0 && renderEmptyRows(Math.min(theirEmptyRows, 3), theirGuessCount + 1)}
+            <div className="mm-rows">
+              {theirGuesses.map((g) => <GuessRow key={g.id} guess={g} />)}
+              {theirGuesses.length === 0 && <div className="mm-empty">No guesses yet</div>}
             </div>
           </div>
 
-          {/* Your guesses (your attempts at their code) */}
-          <div className="mastermind-board your-board">
-            <div className="board-header">
-              <span className="board-title">Your Guesses</span>
-              <div className="secret-display">
-                <span>Their Code:</span>
-                <div className="mini-code">
-                  {phase === 'completed' && opponentSecret.length > 0 ? (
-                    opponentSecret.map((colorIndex, i) => (
-                      <div key={i}>{renderPeg(colorIndex, 'small')}</div>
-                    ))
-                  ) : (
-                    Array(CODE_LENGTH).fill(null).map((_, i) => (
-                      <div key={i} className="mastermind-peg-small mystery">?</div>
-                    ))
-                  )}
-                </div>
+          {/* Your guesses */}
+          <div className="mm-board">
+            <div className="mm-board-header">
+              <span>Your guesses</span>
+              <div className="mm-mini">
+                {phase === 'completed' && opponentSecret.length > 0
+                  ? opponentSecret.map((c, i) => <Peg key={i} colorIndex={c} size="xs" />)
+                  : Array(CODE_LENGTH).fill(0).map((_, i) => <div key={i} className="mm-peg-xs mystery">?</div>)
+                }
               </div>
             </div>
-            <div className="board-rows">
-              {myGuesses.map((g, i) => renderGuessRow(g, i))}
-              {myEmptyRows > 0 && renderEmptyRows(Math.min(myEmptyRows, 3), myGuessCount + 1)}
+            <div className="mm-rows">
+              {myGuesses.map((g) => <GuessRow key={g.id} guess={g} />)}
+              {myGuesses.length === 0 && <div className="mm-empty">No guesses yet</div>}
             </div>
           </div>
         </div>
 
-        {/* Guess input (only when active and your turn) */}
         {phase === 'active' && (
-          <div className="mastermind-input">
-            <div className="current-guess">
-              {currentGuess.map((colorIndex, i) => (
-                <div
-                  key={i}
-                  className={`guess-slot ${selectedGuessSlot === i ? 'selected' : ''}`}
-                  onClick={() => handleGuessSlotClick(i)}
-                >
-                  {renderPeg(colorIndex, 'normal', null, selectedGuessSlot === i)}
+          <div className="mm-input-area">
+            <div className="mm-slots">
+              {currentCode.map((c, i) => (
+                <div key={i} className={`mm-slot ${selectedSlot === i ? 'selected' : ''}`} onClick={() => handleSlotClick(i)}>
+                  <Peg colorIndex={c} selected={selectedSlot === i} />
                 </div>
               ))}
             </div>
 
-            <div className="color-palette">
-              {COLORS.map((color, i) => (
-                <button
-                  key={i}
-                  className="color-btn"
-                  style={{ backgroundColor: color.hex }}
-                  onClick={() => handleGuessColorSelect(i)}
-                  disabled={!isYourTurn}
-                  title={color.name}
-                />
-              ))}
+            <div className="mm-palette">
+              {colors.map((_, i) => {
+                const isUsed = !allowRepeats && currentCode.includes(i) && currentCode[selectedSlot] !== i
+                return (
+                  <button
+                    key={i}
+                    className={`mm-color-btn ${isUsed ? 'used' : ''}`}
+                    style={{ backgroundColor: colors[i].hex }}
+                    onClick={() => handleColorSelect(i)}
+                    disabled={!isYourTurn || isUsed}
+                  />
+                )
+              })}
             </div>
 
-            <div className="mastermind-actions">
-              <button className="btn btn-secondary" onClick={handleResign}>
-                Resign
-              </button>
-              <div className="mastermind-console">
-                {message || (isYourTurn ? 'Make your guess' : 'Waiting for opponent...')}
-              </div>
+            <div className="mm-actions">
+              <button className="btn btn-secondary btn-small" onClick={handleResign}>Resign</button>
+              <span className="mm-msg">{message || (isYourTurn ? 'Your turn' : 'Waiting...')}</span>
               <button
                 className="btn btn-primary"
                 onClick={handleSubmitGuess}
-                disabled={!isYourTurn || currentGuess.some(c => c === null) || isSubmitting}
+                disabled={!isYourTurn || currentCode.some(c => c === null) || isSubmitting}
               >
-                {isSubmitting ? 'Guessing...' : 'Submit Guess'}
+                {isSubmitting ? '...' : 'Guess'}
               </button>
             </div>
           </div>
         )}
 
-        {/* Completed state */}
         {phase === 'completed' && (
-          <div className="mastermind-actions">
-            <div className="mastermind-console">
-              {game.winner_id === user?.id ? 'Victory!' : game.winner_id ? 'Defeated' : 'Draw!'}
-            </div>
-            <button className="btn btn-primary" onClick={() => navigate('/mastermind')}>
-              Back to Games
-            </button>
+          <div className="mm-actions">
+            <button className="btn btn-primary" onClick={() => navigate('/mastermind')}>Back to Games</button>
           </div>
         )}
       </main>

@@ -75,7 +75,14 @@ func (h *Handler) CreateMastermindGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	game, err := db.CreateMastermindGame(h.db, userCtx.UserID, req.OpponentID)
+	// Validate and set defaults for difficulty options
+	numColors := mastermind.ValidateNumColors(req.NumColors)
+	allowRepeats := req.AllowRepeats
+
+	// If numColors is 4 and repeats disabled, that's only 4 options for 4 slots - force enable repeats
+	// Actually allow it, but keep the validation
+
+	game, err := db.CreateMastermindGame(h.db, userCtx.UserID, req.OpponentID, numColors, allowRepeats)
 	if err != nil {
 		jsonError(w, "failed to create game", http.StatusInternalServerError)
 		return
@@ -165,8 +172,8 @@ func (h *Handler) SetMastermindSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate the code
-	if err := mastermind.ValidateCode(req.Code); err != nil {
+	// Validate the code against game settings
+	if err := mastermind.ValidateCode(req.Code, game.NumColors, game.AllowRepeats); err != nil {
 		jsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -237,8 +244,8 @@ func (h *Handler) MakeMastermindGuess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate the guess
-	if err := mastermind.ValidateCode(req.Guess); err != nil {
+	// Validate the guess against game settings
+	if err := mastermind.ValidateCode(req.Guess, game.NumColors, game.AllowRepeats); err != nil {
 		jsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
