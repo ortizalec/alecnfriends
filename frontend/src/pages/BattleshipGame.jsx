@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { useAuth } from '../context/AuthContext'
@@ -36,6 +36,7 @@ export default function BattleshipGame() {
   const [placedShips, setPlacedShips] = useState([])
   const [hoverCells, setHoverCells] = useState([])
   const [previewPosition, setPreviewPosition] = useState(null) // { row, col } for mobile tap-to-preview
+  const lastTapRef = useRef({ time: 0, row: -1, col: -1 })
 
   // Firing state
   const [selectedTarget, setSelectedTarget] = useState(null) // { row, col }
@@ -143,6 +144,9 @@ export default function BattleshipGame() {
   }
 
   const handleSetupCellClick = (row, col) => {
+    // Check for double-tap removal first
+    if (handleSetupCellTap(row, col)) return
+
     if (!placingShip) return
 
     const { valid, cells } = isValidPlacement(row, col, placingShip.size, isHorizontal)
@@ -171,6 +175,33 @@ export default function BattleshipGame() {
 
   const handleRemoveShip = (shipType) => {
     setPlacedShips(placedShips.filter(s => s.type !== shipType))
+  }
+
+  // Double-tap to remove placed ship
+  const findShipAtCell = (row, col) => {
+    for (const ship of placedShips) {
+      const cells = getShipCells(ship)
+      if (cells.some(c => c.row === row && c.col === col)) {
+        return ship
+      }
+    }
+    return null
+  }
+
+  const handleSetupCellTap = (row, col) => {
+    const now = Date.now()
+    const last = lastTapRef.current
+    const ship = findShipAtCell(row, col)
+
+    if (ship && now - last.time < 400 && last.row === row && last.col === col) {
+      // Double tap on a placed ship - remove it
+      handleRemoveShip(ship.type)
+      lastTapRef.current = { time: 0, row: -1, col: -1 }
+      return true // signal that we handled it as a double-tap
+    }
+
+    lastTapRef.current = { time: now, row, col }
+    return false
   }
 
   const handleSubmitShips = async () => {
@@ -324,7 +355,7 @@ export default function BattleshipGame() {
         <main className="battleship-container">
           <div className="battleship-header">
             <h2>Place Your Ships</h2>
-            <p className="text-muted">Tap a ship, then tap the grid to place it</p>
+            <p className="text-muted">Tap a ship, then tap the grid to place. Double-tap to remove.</p>
           </div>
 
           {error && <div className="alert alert-error">{error}</div>}
