@@ -2223,15 +2223,36 @@ h1, h2, h3 {
   border-bottom: 1px solid #444;
 }
 
-.mastermind-page .header a,
-.mastermind-page .header span {
+.mastermind-page .header-logo {
   color: #ccc;
 }
 
+.mastermind-page .hamburger span {
+  background: #ccc;
+}
+
+.mm-toggle {
+  color: #666;
+  font-size: 0.6875rem;
+}
+
+.mm-board-collapsible .mm-board-header {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.mm-board-collapsible .mm-rows,
+.mm-board-collapsible > .mm-row {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #444;
+}
+
 .mm-container {
-  max-width: 420px;
-  margin: 0 auto;
-  padding: 1rem;
+  /* max-width: 420px; */
+  /* margin: 0 auto; */
+  padding: .5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -2392,10 +2413,10 @@ h1, h2, h3 {
 }
 
 .mm-color-btn {
-  width: 40px;
-  height: 40px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 2px solid #555;
+  border: 1px solid #555;
   cursor: pointer;
   transition: transform 0.15s;
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
@@ -2461,8 +2482,6 @@ h1, h2, h3 {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
-  max-height: 200px;
-  overflow-y: auto;
 }
 
 .mm-row {
@@ -2597,6 +2616,5 @@ h1, h2, h3 {
 @media (max-width: 400px) {
   .mm-peg { width: 28px; height: 28px; }
   .mm-peg-sm { width: 20px; height: 20px; }
-  .mm-color-btn { width: 36px; height: 36px; }
-  .mm-rows { max-height: 160px; }
+  .mm-color-btn { width: 30px; height: 30px; }
 }

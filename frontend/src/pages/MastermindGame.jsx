@@ -40,6 +40,7 @@ export default function MastermindGame() {
   const [currentCode, setCurrentCode] = useState([null, null, null, null])
   const [selectedSlot, setSelectedSlot] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [opponentExpanded, setOpponentExpanded] = useState(false)
 
   const loadGame = useCallback(async () => {
     try {
@@ -312,15 +313,24 @@ export default function MastermindGame() {
 
         <div className="mm-boards">
           {/* Their guesses at your code */}
-          <div className="mm-board">
-            <div className="mm-board-header">
-              <span>{opponent?.username}'s guesses</span>
-              <div className="mm-mini">{mySecret.map((c, i) => <Peg key={i} colorIndex={c} size="xs" />)}</div>
+          <div className="mm-board mm-board-collapsible">
+            <div className="mm-board-header" onClick={() => setOpponentExpanded(!opponentExpanded)} style={{ cursor: 'pointer' }}>
+              <span>{opponent?.username}'s guesses {theirGuesses.length > 0 && `(${theirGuesses.length})`}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="mm-mini">{mySecret.map((c, i) => <Peg key={i} colorIndex={c} size="xs" />)}</div>
+                <span className="mm-toggle">{opponentExpanded ? '▲' : '▼'}</span>
+              </div>
             </div>
-            <div className="mm-rows">
-              {theirGuesses.map((g) => <GuessRow key={g.id} guess={g} />)}
-              {theirGuesses.length === 0 && <div className="mm-empty">No guesses yet</div>}
-            </div>
+            {!opponentExpanded && theirGuesses.length > 0 && (
+              <GuessRow guess={theirGuesses[theirGuesses.length - 1]} />
+            )}
+            {opponentExpanded && (
+              <div className="mm-rows">
+                {theirGuesses.map((g) => <GuessRow key={g.id} guess={g} />)}
+                {theirGuesses.length === 0 && <div className="mm-empty">No guesses yet</div>}
+              </div>
+            )}
+            {!opponentExpanded && theirGuesses.length === 0 && <div className="mm-empty">No guesses yet</div>}
           </div>
 
           {/* Your guesses */}
