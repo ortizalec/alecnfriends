@@ -131,7 +131,7 @@ export default function MemoryGame() {
 
     const timer = setTimeout(() => {
       setShowingLastMove(false)
-    }, 1000)
+    }, 2000)
 
     return () => clearTimeout(timer)
 
