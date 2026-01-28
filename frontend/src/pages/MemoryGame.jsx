@@ -72,22 +72,22 @@ export default function MemoryGame() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [moves, setMoves] = useState([])
+  const [lastMove, setLastMove] = useState(null)
 
   // Selection state
   const [firstTile, setFirstTile] = useState(null) // {row, col}
   const [revealedTiles, setRevealedTiles] = useState(null) // {r1,c1,r2,c2,tile1,tile2,matched}
   const [isRevealing, setIsRevealing] = useState(false)
-
-  // Replay opponent's last move briefly when it becomes your turn
-  const [replayTiles, setReplayTiles] = useState(null) // {r1,c1,r2,c2,tile1,tile2}
-  const [lastReplayedMoveId, setLastReplayedMoveId] = useState(null)
-
-  const [isReplayShowing, setIsReplayShowing] = useState(false)
+  const [showingLastMove, setShowingLastMove] = useState(false)
+  const [lastShownMoveId, setLastShownMoveId] = useState(null)
 
   const loadGame = useCallback(async () => {
     try {
       const data = await api.getMemoryGame(id)
       setGameData(data)
+      setMoves(data.moves)
+      setLastMove(data.moves[0] || null)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -98,6 +98,36 @@ export default function MemoryGame() {
   useEffect(() => {
     loadGame()
   }, [loadGame])
+
+  const latestMoveId = gameData?.moves?.[0]?.id
+
+  useEffect(() => {
+    if (!gameData || !gameData.is_your_turn) return
+    if (!latestMoveId) return
+
+    const lastMove = gameData.moves[0]
+
+    // Only show ONCE per move
+    if (
+      lastMove.id === lastShownMoveId ||     // already shown
+      lastMove.user_id === user?.id ||       // was our move
+      lastMove.matched                      // matched tiles stay up anyway
+    ) return
+
+    setLastShownMoveId(lastMove.id)
+    setShowingLastMove(true)
+
+    const timer = setTimeout(() => {
+      setShowingLastMove(false)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+
+  }, [latestMoveId, gameData?.is_your_turn, user?.id])
+
+  useEffect(() => {
+    console.log("showingLastMove", showingLastMove)
+  }, [showingLastMove])
 
   // Poll when waiting
   useEffect(() => {
@@ -118,49 +148,6 @@ export default function MemoryGame() {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [loadGame])
 
-  // so stale timers never trap the board:
-  useEffect(() => {
-    return () => setIsReplayShowing(false)
-  }, [])
-
-  // Flash opponent's last move when it becomes your turn
-  useEffect(() => {
-    if (!gameData || !gameData.is_your_turn) return
-    if (gameData.game.status !== 'active') return
-
-    const opponentMoves = (gameData.moves || []).filter(
-      m => m.user_id !== user?.id && !m.matched
-    )
-
-    if (opponentMoves.length === 0) return
-
-    const lastMove = opponentMoves[0]
-
-    if (lastMove.id === lastReplayedMoveId) return
-
-    // Show replay
-    setReplayTiles({
-      r1: lastMove.row1, c1: lastMove.col1,
-      r2: lastMove.row2, c2: lastMove.col2,
-      tile1: lastMove.tile1, tile2: lastMove.tile2,
-    })
-
-    setIsReplayShowing(true);
-    setLastReplayedMoveId(lastMove.id);
-
-    const timer = setTimeout(() => {
-      setReplayTiles(null);
-      setIsReplayShowing(false);
-    }, 1200);
-
-    return () => {
-      clearTimeout(timer);
-      // Add this to ensure the board unlocks if the component updates/unmounts
-      setIsReplayShowing(false);
-    };
-  }, [gameData, user?.id, lastReplayedMoveId]);
-
-
   const getOpponent = () => {
     if (!gameData?.game || !user) return null
     return gameData.game.player1_id === user.id ? gameData.game.player2 : gameData.game.player1
@@ -177,7 +164,7 @@ export default function MemoryGame() {
   }
 
   const handleTileClick = async (row, col) => {
-    if (!gameData || !gameData.is_your_turn || isRevealing) return
+    if (!gameData || !gameData.is_your_turn || isRevealing || showingLastMove) return
     if (gameData.game.status !== 'active') return
 
     // Can't click matched tiles
@@ -219,7 +206,8 @@ export default function MemoryGame() {
         setIsRevealing(false)
         setMessage('')
         await loadGame()
-      }, result.matched ? 800 : 1500)
+      }, result.matched ? 800 : 1000)
+      setShowingLastMove(false)
     } catch (err) {
       setError(err.message)
       setFirstTile(null)
@@ -264,13 +252,17 @@ export default function MemoryGame() {
       }
     }
 
-    // Replaying opponent's last move
-    if (replayTiles) {
-      if (replayTiles.r1 === row && replayTiles.c1 === col) {
-        return { tileId: replayTiles.tile1, state: 'replay' }
-      }
-      if (replayTiles.r2 === row && replayTiles.c2 === col) {
-        return { tileId: replayTiles.tile2, state: 'replay' }
+    // 3. --- NEW: Previewing the opponent's last move ---
+    if (showingLastMove && gameData.moves.length > 0) {
+      const lastMove = gameData.moves[0]
+      const isFirst = lastMove.row1 === row && lastMove.col1 === col
+      const isSecond = lastMove.row2 === row && lastMove.col2 === col
+
+      if (isFirst || isSecond) {
+        return {
+          tileId: isFirst ? lastMove.tile1 : lastMove.tile2,
+          state: 'revealed'
+        }
       }
     }
 
@@ -343,7 +335,7 @@ export default function MemoryGame() {
                 const tileId = content?.tileId
                 const state = content?.state || 'hidden'
                 const visual = tileId != null ? getTileVisual(tileId) : null
-                const isClickable = state === 'hidden' && gameData.is_your_turn && game.status === 'active' && !isRevealing && !revealedTiles && !isReplayShowing
+                const isClickable = state === 'hidden' && gameData.is_your_turn && game.status === 'active' && !isRevealing && !revealedTiles && !showingLastMove;
 
                 return (
                   <div
@@ -378,7 +370,6 @@ export default function MemoryGame() {
           )}
         </div>
 
-        {/* History panel — commented out for now
         {gameData.moves.length > 0 && (
           <div className="mem-history">
             <h3 className="mem-history-title">Recent Moves</h3>
@@ -405,7 +396,7 @@ export default function MemoryGame() {
             </div>
           </div>
         )}
-        */}
+
       </main>
     </div>
   )
