@@ -4,14 +4,19 @@ import Header from '../components/Header'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 
-const SHAPES = ['circle', 'triangle', 'square', 'diamond', 'star', 'hexagon', 'cross', 'heart']
-const COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c', '#e84393']
+// const SHAPES = ['circle', 'triangle', 'square', 'diamond', 'star', 'hexagon', 'cross', 'heart']
+// const COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c', '#e84393']
 
-const getTileVisual = (id) => ({
+/*const getTileVisual = (id) => ({
   shape: SHAPES[id % SHAPES.length],
   color: COLORS[Math.floor(id / SHAPES.length) % COLORS.length],
+})*/
+
+const getTileVisual = (id) => ({
+  emoji: EMOJIS[id % EMOJIS.length]
 })
 
+/* scg shapes
 function TileShape({ shape, color, size = 24 }) {
   const s = size
   const half = s / 2
@@ -61,7 +66,14 @@ function TileShape({ shape, color, size = 24 }) {
     default:
       return <circle cx={half} cy={half} r={half * 0.7} fill={color} />
   }
-}
+}*/
+const EMOJIS = [
+  '🐶', '🐱', '🦊', '🐻', '🐼', '🐸', '🦄', '🐵',
+  '🐔', '🐧', '🐢', '🐙', '🦋', '🐞', '🐠', '🦀',
+  '🍎', '🍌', '🍇', '🍓', '🍕', '🍩', '🍪', '🍉',
+  '⚽', '🏀', '🎲', '🎮', '🚗', '✈️', '🚀', '⛵',
+  '⭐', '🌙', '☀️', '🔥', '💎', '🎁', '🎈', '🎵'
+]
 
 export default function MemoryGame() {
   const { id } = useParams()
@@ -344,11 +356,16 @@ export default function MemoryGame() {
                     onClick={() => isClickable ? handleTileClick(r, c) : null}
                   >
                     {visual ? (
+                      <>
+                        <div className="mem-tile-face mem-emoji">
+                          {visual.emoji}
+                        </div>
+                        {/*
                       <div className="mem-tile-face">
                         <svg viewBox="0 0 40 40" width="100%" height="100%">
                           <TileShape shape={visual.shape} color={visual.color} size={40} />
                         </svg>
-                      </div>
+                      </div>*/}</>
                     ) : state === 'selected' ? (
                       <div className="mem-tile-selected-dot" />
                     ) : (
@@ -382,12 +399,15 @@ export default function MemoryGame() {
                   <div key={move.id} className={`mem-history-item ${move.matched ? 'match' : ''}`}>
                     <span className="mem-history-player">{isMe ? 'You' : opponent?.username}</span>
                     <div className="mem-history-tiles">
+                      <span className="mem-history-emoji">{v1.emoji}</span>
+                      <span className="mem-history-emoji">{v2.emoji}</span>
+                      {/*
                       <svg viewBox="0 0 24 24" width="20" height="20">
                         <TileShape shape={v1.shape} color={v1.color} size={24} />
                       </svg>
                       <svg viewBox="0 0 24 24" width="20" height="20">
                         <TileShape shape={v2.shape} color={v2.color} size={24} />
-                      </svg>
+                      </svg> */}
                     </div>
                     <span className="mem-history-result">{move.matched ? 'Match' : 'Miss'}</span>
                   </div>
