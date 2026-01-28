@@ -182,6 +182,41 @@ func migrate(db *sql.DB) error {
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_mastermind_guesses_game ON mastermind_guesses(game_id)`,
+		// Memory game tables
+		`CREATE TABLE IF NOT EXISTS memory_games (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			player1_id INTEGER NOT NULL,
+			player2_id INTEGER NOT NULL,
+			current_turn INTEGER NOT NULL,
+			status TEXT NOT NULL DEFAULT 'active',
+			winner_id INTEGER,
+			board_size TEXT NOT NULL DEFAULT '4x5',
+			board TEXT NOT NULL,
+			matched TEXT NOT NULL DEFAULT '[]',
+			player1_score INTEGER DEFAULT 0,
+			player2_score INTEGER DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (player1_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (player2_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_memory_games_player1 ON memory_games(player1_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_memory_games_player2 ON memory_games(player2_id)`,
+		`CREATE TABLE IF NOT EXISTS memory_moves (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			game_id INTEGER NOT NULL,
+			user_id INTEGER NOT NULL,
+			row1 INTEGER NOT NULL,
+			col1 INTEGER NOT NULL,
+			row2 INTEGER NOT NULL,
+			col2 INTEGER NOT NULL,
+			tile1 INTEGER NOT NULL,
+			tile2 INTEGER NOT NULL,
+			matched INTEGER NOT NULL DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (game_id) REFERENCES memory_games(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_memory_moves_game ON memory_moves(game_id)`,
 	}
 
 	for _, m := range migrations {

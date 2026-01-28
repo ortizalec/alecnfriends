@@ -233,7 +233,6 @@ export default function BattleshipGame() {
 
     // Wait for bomb animation to complete
     await new Promise(resolve => setTimeout(resolve, 600))
-    if (valid && navigator.vibrate) navigator.vibrate(10)
 
     try {
       const result = await api.fireBattleshipShot(id, selectedTarget.row, selectedTarget.col)

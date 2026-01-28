@@ -9,6 +9,8 @@ import BattleshipHome from './pages/BattleshipHome'
 import BattleshipGame from './pages/BattleshipGame'
 import MastermindHome from './pages/MastermindHome'
 import MastermindGame from './pages/MastermindGame'
+import MemoryHome from './pages/MemoryHome'
+import MemoryGame from './pages/MemoryGame'
 import Friends from './pages/Friends'
 import Profile from './pages/Profile'
 
@@ -84,6 +86,22 @@ function App() {
         element={
           <ProtectedRoute>
             <MastermindGame />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/memory"
+        element={
+          <ProtectedRoute>
+            <MemoryHome />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/memory/:id"
+        element={
+          <ProtectedRoute>
+            <MemoryGame />
           </ProtectedRoute>
         }
       />

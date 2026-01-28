@@ -410,6 +410,59 @@ class ApiService {
     }
     return data
   }
+  // Memory API
+  async getMemoryGames() {
+    const response = await this.request('/memory/games')
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Failed to get games')
+    }
+    return response.json()
+  }
+
+  async createMemoryGame(opponentId, boardSize = '4x5') {
+    const response = await this.request('/memory/games', {
+      method: 'POST',
+      body: JSON.stringify({ opponent_id: opponentId, board_size: boardSize }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create game')
+    }
+    return data
+  }
+
+  async getMemoryGame(gameId) {
+    const response = await this.request(`/memory/games/${gameId}`)
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Failed to get game')
+    }
+    return response.json()
+  }
+
+  async revealMemoryTiles(gameId, row1, col1, row2, col2) {
+    const response = await this.request(`/memory/games/${gameId}/reveal`, {
+      method: 'POST',
+      body: JSON.stringify({ row1, col1, row2, col2 }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to reveal tiles')
+    }
+    return data
+  }
+
+  async resignMemoryGame(gameId) {
+    const response = await this.request(`/memory/games/${gameId}/resign`, {
+      method: 'POST',
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to resign game')
+    }
+    return data
+  }
 }
 
 export const api = new ApiService()

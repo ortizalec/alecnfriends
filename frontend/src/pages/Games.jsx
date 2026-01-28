@@ -8,6 +8,7 @@ export default function Games() {
   const [scrabbleCount, setScrabbleCount] = useState(0)
   const [battleshipCount, setBattleshipCount] = useState(0)
   const [mastermindCount, setMastermindCount] = useState(0)
+  const [memoryCount, setMemoryCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -16,17 +17,20 @@ export default function Games() {
 
   const loadCounts = async () => {
     try {
-      const [scrabbleData, battleshipData, mastermindData] = await Promise.all([
+      const [scrabbleData, battleshipData, mastermindData, memoryData] = await Promise.all([
         api.getScrabbleGames(),
         api.getBattleshipGames().catch(() => ({ your_turn: [], their_turn: [] })),
         api.getMastermindGames().catch(() => ({ your_turn: [], their_turn: [] })),
+        api.getMemoryGames().catch(() => ({ your_turn: [], their_turn: [] })),
       ])
       const scrabbleActive = (scrabbleData.your_turn?.length || 0) + (scrabbleData.their_turn?.length || 0)
       const battleshipActive = (battleshipData.your_turn?.length || 0) + (battleshipData.their_turn?.length || 0)
       const mastermindActive = (mastermindData.your_turn?.length || 0) + (mastermindData.their_turn?.length || 0)
+      const memoryActive = (memoryData.your_turn?.length || 0) + (memoryData.their_turn?.length || 0)
       setScrabbleCount(scrabbleActive)
       setBattleshipCount(battleshipActive)
       setMastermindCount(mastermindActive)
+      setMemoryCount(memoryActive)
     } catch {
       // Ignore errors for counts
     } finally {
@@ -111,6 +115,32 @@ export default function Games() {
             </div>
             {!loading && mastermindCount > 0 && (
               <span className="game-hub-badge">{mastermindCount}</span>
+            )}
+            <span className="game-hub-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </span>
+          </button>
+          <button
+            className="game-hub-card"
+            onClick={() => navigate('/memory')}
+          >
+            <div className="game-hub-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="2" width="8" height="8" rx="1" />
+                <rect x="14" y="2" width="8" height="8" rx="1" />
+                <rect x="2" y="14" width="8" height="8" rx="1" />
+                <rect x="14" y="14" width="8" height="8" rx="1" />
+                <path d="M6 6h0M18 6h0M6 18h0M18 18h0" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div className="game-hub-info">
+              <h2 className="game-hub-title">Memory Match</h2>
+              <p className="game-hub-description">Tile matching game</p>
+            </div>
+            {!loading && memoryCount > 0 && (
+              <span className="game-hub-badge">{memoryCount}</span>
             )}
             <span className="game-hub-arrow">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -88,6 +88,13 @@ func main() {
 	mux.HandleFunc("POST /api/mastermind/games/{id}/guess", middleware.Auth(jwtSecret, h.MakeMastermindGuess))
 	mux.HandleFunc("POST /api/mastermind/games/{id}/resign", middleware.Auth(jwtSecret, h.ResignMastermindGame))
 
+	// Memory routes
+	mux.HandleFunc("GET /api/memory/games", middleware.Auth(jwtSecret, h.GetMemoryGames))
+	mux.HandleFunc("POST /api/memory/games", middleware.Auth(jwtSecret, h.CreateMemoryGame))
+	mux.HandleFunc("GET /api/memory/games/{id}", middleware.Auth(jwtSecret, h.GetMemoryGame))
+	mux.HandleFunc("POST /api/memory/games/{id}/reveal", middleware.Auth(jwtSecret, h.RevealTiles))
+	mux.HandleFunc("POST /api/memory/games/{id}/resign", middleware.Auth(jwtSecret, h.ResignMemoryGame))
+
 	// Health check
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
