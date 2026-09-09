@@ -15,7 +15,27 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="user-group" :href="route('team.edit')" :current="request()->routeIs('team.edit')" wire:navigate>
+                        {{ __('My Team') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-check" :href="route('predictions.edit')" :current="request()->routeIs('predictions.edit')" wire:navigate>
+                        {{ __('Predictions') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-list" :href="route('surveys.index')" :current="request()->routeIs('surveys.index')" wire:navigate>
+                        {{ __('Surveys') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                @can('access-admin')
+                    <flux:sidebar.group :heading="__('Administration')" class="grid">
+                        <flux:sidebar.item icon="wrench-screwdriver" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
+                            {{ __('Admin') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="bolt" :href="route('admin.scoring')" :current="request()->routeIs('admin.scoring')" wire:navigate>
+                            {{ __('Live Scoring') }}
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
             </flux:sidebar.nav>
 
             <flux:spacer />
