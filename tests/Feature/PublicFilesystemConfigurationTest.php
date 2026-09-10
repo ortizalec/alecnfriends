@@ -1,9 +1,9 @@
 <?php
 
-test('public storage uses the local driver by default', function () {
-    $configuration = require base_path('config/filesystems.php');
+use Illuminate\Foundation\CloudBootstrapper;
 
-    expect($configuration['disks']['public'])
+test('public storage uses the local disk outside Laravel Cloud', function () {
+    expect(config('filesystems.disks.public'))
         ->toMatchArray([
             'driver' => 'local',
             'root' => storage_path('app/public'),
@@ -11,19 +11,27 @@ test('public storage uses the local driver by default', function () {
         ]);
 });
 
-test('public storage can use an s3 compatible bucket without object visibility', function () {
-    $originalDriver = getenv('PUBLIC_FILESYSTEM_DRIVER');
-    putenv('PUBLIC_FILESYSTEM_DRIVER=s3');
+test('Laravel Cloud replaces the public disk with its injected bucket configuration', function () {
+    $_SERVER['LARAVEL_CLOUD_DISK_CONFIG'] = json_encode([[
+        'disk' => 'public',
+        'access_key_id' => 'access-key',
+        'access_key_secret' => 'secret-key',
+        'bucket' => 'cast-photos',
+        'url' => 'https://images.example.com',
+        'endpoint' => 'https://storage.example.com',
+    ]], JSON_THROW_ON_ERROR);
 
     try {
-        $configuration = require base_path('config/filesystems.php');
-    } finally {
-        $originalDriver === false
-            ? putenv('PUBLIC_FILESYSTEM_DRIVER')
-            : putenv('PUBLIC_FILESYSTEM_DRIVER='.$originalDriver);
-    }
+        CloudBootstrapper::configureDisks(app());
 
-    expect($configuration['disks']['public'])
-        ->toMatchArray(['driver' => 's3'])
-        ->not->toHaveKey('visibility');
+        expect(config('filesystems.disks.public'))
+            ->toMatchArray([
+                'driver' => 's3',
+                'bucket' => 'cast-photos',
+                'url' => 'https://images.example.com',
+            ])
+            ->not->toHaveKey('visibility');
+    } finally {
+        unset($_SERVER['LARAVEL_CLOUD_DISK_CONFIG']);
+    }
 });

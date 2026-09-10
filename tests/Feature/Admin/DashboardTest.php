@@ -45,7 +45,7 @@ test('admins can add a cast member', function () {
     ]);
 });
 
-test('admins can upload a cast member photo to public storage', function () {
+test('admins can upload a cast member photo to public local storage', function () {
     Storage::fake('public');
     $this->actingAs(User::factory()->admin()->create());
 
