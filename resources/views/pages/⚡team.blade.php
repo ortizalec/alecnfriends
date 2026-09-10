@@ -126,13 +126,14 @@ new #[Title('My Team')] class extends Component {
             <div class="flex w-full min-w-0 max-w-full snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain pb-3">
                 @foreach ($this->castMembers as $castMember)
                     @php($isSelected = in_array($castMember->id, $selectedCastMemberIds))
-                    <label wire:key="cast-member-{{ $castMember->id }}" class="group relative w-40 shrink-0 snap-start overflow-hidden rounded-xl border transition {{ $isSelected ? 'border-accent bg-accent/5 ring-2 ring-accent' : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900' }} {{ $castMember->status !== CastMemberStatus::Active ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-zinc-400 dark:hover:border-zinc-500' }}">
+                    <label wire:key="cast-member-{{ $castMember->id }}" class="group relative aspect-[4/5] w-40 shrink-0 snap-start overflow-hidden rounded-xl bg-zinc-100 shadow-sm ring-offset-2 transition focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--color-accent)] dark:bg-zinc-800 dark:ring-offset-zinc-900 {{ $isSelected ? 'ring-2 ring-accent' : '' }} {{ $castMember->status !== CastMemberStatus::Active ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:-translate-y-0.5' }}">
                         <input type="checkbox" wire:model.live="selectedCastMemberIds" value="{{ $castMember->id }}" class="sr-only" @disabled($castMember->status !== CastMemberStatus::Active || (count($selectedCastMemberIds) >= 5 && ! $isSelected))>
-                        <img src="{{ $castMember->imageUrl() }}" alt="{{ $castMember->name }}" class="aspect-square w-full object-cover" loading="lazy">
-                        <span class="flex min-w-0 flex-col gap-1 p-3">
-                            <span class="font-semibold text-zinc-900 dark:text-white">{{ $castMember->name }}</span>
+                        <img src="{{ $castMember->imageUrl() }}" alt="{{ $castMember->name }}" class="pointer-events-none size-full object-cover outline outline-1 -outline-offset-1 outline-black/5 transition duration-300 group-hover:scale-105 group-hover:opacity-90 dark:outline-white/10" loading="lazy">
+                        <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-transparent"></span>
+                        <span class="pointer-events-none absolute inset-x-0 bottom-0 flex min-w-0 flex-col gap-1 p-3">
+                            <span class="truncate font-semibold text-white">{{ $castMember->name }}</span>
                             @if ($castMember->status !== CastMemberStatus::Active)
-                                <span class="text-sm text-zinc-500">{{ str($castMember->status->value)->headline() }}</span>
+                                <span class="text-sm text-white/70">{{ str($castMember->status->value)->headline() }}</span>
                             @endif
                         </span>
                     </label>

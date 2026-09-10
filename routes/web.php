@@ -9,6 +9,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('team', 'pages::team')->name('team.edit');
     Route::livewire('predictions', 'pages::predictions')->name('predictions.edit');
     Route::livewire('surveys', 'pages::surveys')->name('surveys.index');
+    Route::livewire('cast/{castMember}', 'pages::cast-members.show')->name('cast-members.show');
 
     Route::livewire('admin', 'pages::admin.dashboard')
         ->middleware('can:access-admin')

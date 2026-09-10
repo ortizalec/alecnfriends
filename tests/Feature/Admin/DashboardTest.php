@@ -27,6 +27,21 @@ test('admins can access the admin dashboard', function () {
         ->assertSee('League administration');
 });
 
+test('admin cast cards show the name and traitor knife and open the editor when selected', function () {
+    $castMember = CastMember::factory()->create([
+        'name' => 'Avery Stone',
+        'is_traitor' => true,
+        'points' => 7,
+    ]);
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.dashboard'))
+        ->assertSeeText($castMember->name)
+        ->assertSeeText('🔪')
+        ->assertSeeHtml('wire:click="editCastMember('.$castMember->id.')"')
+        ->assertDontSeeText('7 pts');
+});
+
 test('admins can add a cast member', function () {
     $this->actingAs(User::factory()->admin()->create());
 

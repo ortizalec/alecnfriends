@@ -103,10 +103,11 @@ new #[Title('Surveys')] class extends Component {
                 <div class="flex w-full min-w-0 max-w-full snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3">
                     @foreach ($this->activeCastMembers as $castMember)
                         @php($isSelected = in_array($castMember->id, $answers[$poll->id] ?? []))
-                        <label wire:key="survey-{{ $poll->id }}-cast-{{ $castMember->id }}" class="w-36 shrink-0 snap-start cursor-pointer overflow-hidden rounded-xl border bg-white transition dark:bg-zinc-900 sm:w-40 {{ $isSelected ? 'border-accent ring-2 ring-accent' : 'border-zinc-200 dark:border-zinc-700' }}">
+                        <label wire:key="survey-{{ $poll->id }}-cast-{{ $castMember->id }}" class="group relative aspect-[4/5] w-36 shrink-0 snap-start cursor-pointer overflow-hidden rounded-xl bg-zinc-100 shadow-sm ring-offset-2 transition hover:-translate-y-0.5 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--color-accent)] dark:bg-zinc-800 dark:ring-offset-zinc-900 sm:w-40 {{ $isSelected ? 'ring-2 ring-accent' : '' }}">
                             <input type="checkbox" wire:model.live="answers.{{ $poll->id }}" value="{{ $castMember->id }}" class="sr-only" @disabled(count($answers[$poll->id] ?? []) >= $poll->maximum_selections && ! $isSelected)>
-                            <img src="{{ $castMember->imageUrl() }}" alt="{{ $castMember->name }}" class="aspect-square w-full object-cover" loading="lazy">
-                            <span class="block truncate p-3 text-sm font-semibold">{{ $castMember->name }}</span>
+                            <img src="{{ $castMember->imageUrl() }}" alt="{{ $castMember->name }}" class="pointer-events-none size-full object-cover outline outline-1 -outline-offset-1 outline-black/5 transition duration-300 group-hover:scale-105 group-hover:opacity-90 dark:outline-white/10" loading="lazy">
+                            <span class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-transparent"></span>
+                            <span class="pointer-events-none absolute inset-x-0 bottom-0 block truncate p-3 text-sm font-semibold text-white">{{ $castMember->name }}</span>
                         </label>
                     @endforeach
                 </div>

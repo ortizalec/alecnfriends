@@ -272,35 +272,31 @@ new #[Title('Admin')] class extends Component {
             <flux:button variant="primary" icon="plus" wire:click="createCastMember">{{ __('Add cast member') }}</flux:button>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul role="list" class="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
             @forelse ($this->castMembers as $castMember)
-                <flux:card wire:key="admin-cast-{{ $castMember->id }}" class="flex items-center justify-between gap-4">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <img src="{{ $castMember->imageUrl() }}" alt="{{ $castMember->name }}" class="size-14 shrink-0 rounded-lg object-cover" loading="lazy">
-                        <div class="min-w-0">
-                        <flux:heading class="truncate">{{ $castMember->name }}</flux:heading>
-                        <div class="flex flex-wrap items-center gap-2 pt-1">
-                            <flux:badge :color="$castMember->status === CastMemberStatus::Active ? 'green' : ($castMember->status === CastMemberStatus::Murdered ? 'red' : 'amber')">{{ str($castMember->status->value)->headline() }}</flux:badge>
-                            <flux:badge :color="$castMember->is_traitor ? 'red' : 'blue'">{{ $castMember->is_traitor ? __('Traitor') : __('Faithful') }}</flux:badge>
-                            <flux:badge color="green">{{ $castMember->points }} pts</flux:badge>
-                            <flux:text size="sm">{{ trans_choice(':count team|:count teams', $castMember->users_count, ['count' => $castMember->users_count]) }}</flux:text>
-                        </div>
-                        </div>
+                <li wire:key="admin-cast-{{ $castMember->id }}" class="group relative aspect-[4/5] overflow-hidden rounded-xl bg-zinc-100 shadow-sm focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--color-accent)] dark:bg-zinc-800">
+                    <img src="{{ $castMember->imageUrl() }}" alt="{{ $castMember->name }}" class="pointer-events-none size-full object-cover outline outline-1 -outline-offset-1 outline-black/5 transition duration-300 group-hover:scale-105 group-hover:opacity-75 dark:outline-white/10" loading="lazy">
+                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                    <a href="{{ route('cast-members.show', $castMember) }}" wire:navigate class="absolute inset-0 z-10 cursor-pointer focus:outline-none" aria-label="{{ __('View :name', ['name' => $castMember->name]) }}"></a>
+                    <p class="pointer-events-none absolute inset-x-0 bottom-0 z-10 truncate p-3 text-sm font-semibold text-white sm:p-4 sm:text-base">
+                        {{ $castMember->name }}@if ($castMember->is_traitor) <span aria-label="{{ __('Traitor') }}">🔪</span>@endif
+                    </p>
+                    <div class="absolute right-2 top-2 z-20">
+                        <flux:dropdown position="bottom" align="end">
+                            <flux:button icon="ellipsis-horizontal" variant="filled" aria-label="{{ __('Manage :name', ['name' => $castMember->name]) }}" />
+                            <flux:menu>
+                                <flux:menu.item icon="pencil-square" wire:click="editCastMember({{ $castMember->id }})">{{ __('Edit') }}</flux:menu.item>
+                                <flux:menu.item icon="check-circle" wire:click="setCastMemberStatus({{ $castMember->id }}, 'active')">{{ __('Mark active') }}</flux:menu.item>
+                                <flux:menu.item icon="x-circle" wire:click="setCastMemberStatus({{ $castMember->id }}, 'murdered')">{{ __('Mark murdered') }}</flux:menu.item>
+                                <flux:menu.item icon="arrow-right-circle" wire:click="setCastMemberStatus({{ $castMember->id }}, 'banished')">{{ __('Mark banished') }}</flux:menu.item>
+                            </flux:menu>
+                        </flux:dropdown>
                     </div>
-                    <flux:dropdown position="bottom" align="end">
-                        <flux:button icon="ellipsis-horizontal" variant="ghost" />
-                        <flux:menu>
-                            <flux:menu.item icon="pencil-square" wire:click="editCastMember({{ $castMember->id }})">{{ __('Edit') }}</flux:menu.item>
-                            <flux:menu.item icon="check-circle" wire:click="setCastMemberStatus({{ $castMember->id }}, 'active')">{{ __('Mark active') }}</flux:menu.item>
-                            <flux:menu.item icon="x-circle" wire:click="setCastMemberStatus({{ $castMember->id }}, 'murdered')">{{ __('Mark murdered') }}</flux:menu.item>
-                            <flux:menu.item icon="arrow-right-circle" wire:click="setCastMemberStatus({{ $castMember->id }}, 'banished')">{{ __('Mark banished') }}</flux:menu.item>
-                        </flux:menu>
-                    </flux:dropdown>
-                </flux:card>
+                </li>
             @empty
-                <flux:callout class="sm:col-span-2 lg:col-span-3" icon="user-group" heading="{{ __('No cast members yet') }}">{{ __('Add the first cast member to begin building the season roster.') }}</flux:callout>
+                <flux:callout class="col-span-2 sm:col-span-3 lg:col-span-4" icon="user-group" heading="{{ __('No cast members yet') }}">{{ __('Add the first cast member to begin building the season roster.') }}</flux:callout>
             @endforelse
-        </div>
+        </ul>
     </section>
 
     <section class="flex flex-col gap-4">

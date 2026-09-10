@@ -9,9 +9,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'photo_url', 'photo_path', 'is_active', 'status', 'is_traitor', 'points'])]
+#[Fillable(['name', 'photo_url', 'photo_path', 'bio', 'is_active', 'status', 'is_traitor', 'points'])]
 class CastMember extends Model
 {
     /** @use HasFactory<CastMemberFactory> */
@@ -23,6 +24,12 @@ class CastMember extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withTimestamps();
+    }
+
+    /** @return HasMany<CastMemberAction, $this> */
+    public function actions(): HasMany
+    {
+        return $this->hasMany(CastMemberAction::class);
     }
 
     /**

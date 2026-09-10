@@ -19,6 +19,28 @@ test('leaderboard ranks player teams by their combined cast points', function ()
         ->assertSeeInOrder(['First Place', '50', 'Second Place', '25']);
 });
 
+test('leaderboard table shows player names team tags and total points without score breakdowns', function () {
+    $user = User::factory()->create(['name' => 'Image Player']);
+    $castMember = CastMember::factory()->create([
+        'name' => 'Photo Teammate',
+        'photo_url' => 'https://example.test/photo-teammate.png',
+        'points' => 10,
+    ]);
+    $user->castMembers()->attach($castMember);
+    Prediction::factory()->for($user)->create(['points' => 4]);
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertSee('<table', false)
+        ->assertSeeText('Image Player')
+        ->assertSeeText('Photo Teammate')
+        ->assertSee(route('cast-members.show', $castMember))
+        ->assertDontSee('https://example.test/photo-teammate.png')
+        ->assertSeeText('14')
+        ->assertDontSeeText('1/5 selected')
+        ->assertDontSeeText('4 prediction · 0 challenge');
+});
+
 test('my team displays cast members in points order', function () {
     $user = User::factory()->create();
     $lowerScorer = CastMember::factory()->create(['name' => 'Lower Scorer', 'points' => 2]);
@@ -40,7 +62,7 @@ test('leaderboard includes prediction points in the total', function () {
     $this->actingAs($user)
         ->get(route('dashboard'))
         ->assertSeeText('14')
-        ->assertSeeText('4 prediction');
+        ->assertDontSeeText('4 prediction');
 });
 
 test('dashboard prompts users to complete pending predictions and surveys', function () {

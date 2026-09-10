@@ -70,24 +70,35 @@ new #[Title('Leaderboard')] class extends Component {
         </flux:callout>
     @endif
 
-    <div class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
-        <div class="grid grid-cols-[3rem_1fr_auto] gap-4 bg-zinc-50 px-4 py-3 text-sm font-medium text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400 sm:grid-cols-[4rem_1fr_2fr_6rem]">
-            <span>{{ __('Rank') }}</span><span>{{ __('Player') }}</span><span class="hidden sm:block">{{ __('Team') }}</span><span class="text-right">{{ __('Points') }}</span>
-        </div>
-        @forelse ($this->leaderboard as $player)
-            <div wire:key="leaderboard-{{ $player->id }}" class="grid grid-cols-[3rem_1fr_auto] items-center gap-4 border-t border-zinc-200 px-4 py-4 dark:border-zinc-700 sm:grid-cols-[4rem_1fr_2fr_6rem]">
-                <span class="text-lg font-bold text-zinc-500">#{{ $loop->iteration }}</span>
-                <div class="min-w-0"><flux:heading class="truncate">{{ $player->name }}</flux:heading><flux:text size="sm">{{ $player->castMembers->count() }}/5 selected</flux:text></div>
-                <div class="hidden flex-wrap gap-1.5 sm:flex">
-                    @foreach ($player->castMembers->sortByDesc('points') as $castMember)
-                        <flux:badge wire:key="leaderboard-{{ $player->id }}-{{ $castMember->id }}" color="zinc">{{ $castMember->name }}</flux:badge>
-                    @endforeach
-                </div>
-                <div class="text-right"><div class="text-xl font-bold">{{ ($player->cast_members_sum_points ?? 0) + ($player->predictions_sum_points ?? 0) + ($player->team_challenge_scores_sum_points ?? 0) }}</div><flux:text size="sm">{{ $player->predictions_sum_points ?? 0 }} prediction · {{ $player->team_challenge_scores_sum_points ?? 0 }} challenge</flux:text></div>
-            </div>
-        @empty
-            <div class="p-8 text-center"><flux:text>{{ __('No player teams have been created yet.') }}</flux:text></div>
-        @endforelse
+    <div class="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
+        <table class="w-full min-w-2xl table-fixed text-left">
+            <thead class="bg-zinc-50 text-sm font-medium text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                <tr>
+                    <th scope="col" class="w-1/4 px-4 py-3 font-medium">{{ __('Player') }}</th>
+                    <th scope="col" class="w-3/5 px-4 py-3 font-medium">{{ __('Team') }}</th>
+                    <th scope="col" class="px-4 py-3 text-right font-medium">{{ __('Points') }}</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                @forelse ($this->leaderboard as $player)
+                    <tr wire:key="leaderboard-{{ $player->id }}">
+                        <td class="px-4 py-4"><flux:heading class="truncate">{{ $player->name }}</flux:heading></td>
+                        <td class="px-4 py-4">
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach ($player->castMembers->sortByDesc('points') as $castMember)
+                                    <flux:badge wire:key="leaderboard-{{ $player->id }}-{{ $castMember->id }}" color="zinc" :href="route('cast-members.show', $castMember)" wire:navigate>{{ $castMember->name }}</flux:badge>
+                                @endforeach
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-right text-xl font-bold">{{ ($player->cast_members_sum_points ?? 0) + ($player->predictions_sum_points ?? 0) + ($player->team_challenge_scores_sum_points ?? 0) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="3" class="p-8 text-center"><flux:text>{{ __('No player teams have been created yet.') }}</flux:text></td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <section class="flex flex-col gap-3">
