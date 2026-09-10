@@ -26,6 +26,24 @@ class Prediction extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<CastMember, $this> */
+    public function murderedCastMember(): BelongsTo
+    {
+        return $this->belongsTo(CastMember::class, 'murdered_cast_member_id');
+    }
+
+    /** @return BelongsTo<CastMember, $this> */
+    public function banishedCastMember(): BelongsTo
+    {
+        return $this->belongsTo(CastMember::class, 'banished_cast_member_id');
+    }
+
+    /** @return BelongsTo<CastMember, $this> */
+    public function breakfastCastMember(): BelongsTo
+    {
+        return $this->belongsTo(CastMember::class, 'breakfast_cast_member_id');
+    }
+
     protected function casts(): array
     {
         return ['points' => 'integer'];

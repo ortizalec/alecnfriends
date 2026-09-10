@@ -68,5 +68,7 @@ class DatabaseSeeder extends Seeder
                 ->all();
             $player->castMembers()->sync($team);
         }
+
+        $this->call(DemoSeasonSeeder::class);
     }
 }

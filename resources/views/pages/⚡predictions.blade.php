@@ -44,6 +44,16 @@ new #[Title('Predictions')] class extends Component {
         return CastMember::query()->active()->orderBy('name')->get();
     }
 
+    /** @return Collection<int, Prediction> */
+    #[Computed]
+    public function predictionHistory(): Collection
+    {
+        return Prediction::query()->whereBelongsTo(Auth::user())
+            ->whereHas('episode', fn ($query) => $query->whereNotNull('murdered_cast_member_id')->orWhereNotNull('banished_cast_member_id')->orWhereNotNull('breakfast_cast_member_id'))
+            ->with(['episode', 'murderedCastMember', 'banishedCastMember', 'breakfastCastMember'])
+            ->latest('episode_id')->get();
+    }
+
     public function save(): void
     {
         $episode = $this->currentEpisode;
@@ -93,4 +103,28 @@ new #[Title('Predictions')] class extends Component {
             </form>
         </flux:card>
     @endif
+
+    <section class="flex flex-col gap-4">
+        <div><flux:heading size="lg">{{ __('Prediction history') }}</flux:heading><flux:text>{{ __('Review your previous picks and official results.') }}</flux:text></div>
+        @forelse ($this->predictionHistory as $prediction)
+            <flux:card wire:key="prediction-history-{{ $prediction->id }}" class="flex flex-col gap-4">
+                <div class="flex items-center justify-between gap-3"><div><flux:heading>{{ __('Episode :number', ['number' => $prediction->episode->number]) }}</flux:heading><flux:text size="sm">{{ $prediction->episode->title }}</flux:text></div><flux:badge color="green">{{ trans_choice(':count point|:count points', $prediction->points, ['count' => $prediction->points]) }}</flux:badge></div>
+                <div class="grid gap-3 sm:grid-cols-3">
+                    @foreach ([
+                        ['label' => __('Murdered'), 'pick' => $prediction->murderedCastMember, 'resultId' => $prediction->episode->murdered_cast_member_id, 'points' => 1],
+                        ['label' => __('Banished'), 'pick' => $prediction->banishedCastMember, 'resultId' => $prediction->episode->banished_cast_member_id, 'points' => 1],
+                        ['label' => __('First at breakfast'), 'pick' => $prediction->breakfastCastMember, 'resultId' => $prediction->episode->breakfast_cast_member_id, 'points' => 2],
+                    ] as $historyPick)
+                        @php($isCorrect = $historyPick['pick']?->id === $historyPick['resultId'])
+                        <div class="rounded-xl border p-3 {{ $isCorrect ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950/30' : 'border-zinc-200 dark:border-zinc-700' }}">
+                            <div class="flex items-center justify-between gap-2"><flux:text size="sm">{{ $historyPick['label'] }}</flux:text><flux:badge :color="$isCorrect ? 'green' : 'red'">{{ $isCorrect ? __('Correct +:points', ['points' => $historyPick['points']]) : __('Incorrect') }}</flux:badge></div>
+                            <div class="pt-2 font-medium">{{ $historyPick['pick']?->name ?? __('No pick') }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            </flux:card>
+        @empty
+            <flux:callout icon="clock" heading="{{ __('No prediction history yet') }}">{{ __('Completed episode predictions will appear here.') }}</flux:callout>
+        @endforelse
+    </section>
 </div>

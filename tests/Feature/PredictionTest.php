@@ -58,3 +58,29 @@ test('an eliminated cast member cannot be submitted as a prediction', function (
 
     expect(Prediction::query()->count())->toBe(0);
 });
+
+test('users can review their prediction history with correctness and points', function () {
+    $user = User::factory()->create();
+    $castMembers = CastMember::factory()->count(4)->create();
+    $episode = Episode::factory()->create([
+        'number' => 4,
+        'title' => 'The Fourth Round Table',
+        'murdered_cast_member_id' => $castMembers[0]->id,
+        'banished_cast_member_id' => $castMembers[1]->id,
+        'breakfast_cast_member_id' => $castMembers[2]->id,
+    ]);
+    Prediction::factory()->for($episode)->for($user)->create([
+        'murdered_cast_member_id' => $castMembers[0]->id,
+        'banished_cast_member_id' => $castMembers[3]->id,
+        'breakfast_cast_member_id' => $castMembers[2]->id,
+        'points' => 3,
+    ]);
+
+    $this->actingAs($user)->get(route('predictions.edit'))
+        ->assertSeeText('Prediction history')
+        ->assertSeeText('Episode 4')
+        ->assertSeeText('3 points')
+        ->assertSeeText('Correct +1')
+        ->assertSeeText('Correct +2')
+        ->assertSeeText('Incorrect');
+});
