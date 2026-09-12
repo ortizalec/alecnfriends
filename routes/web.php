@@ -17,6 +17,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('admin/scoring', 'pages::admin.scoring')
         ->middleware('can:access-admin')
         ->name('admin.scoring');
+    Route::livewire('admin/scoring/results', 'pages::admin.scoring')
+        ->middleware('can:access-admin')
+        ->name('admin.scoring.results');
+    Route::livewire('admin/scoring/votes', 'pages::admin.scoring')
+        ->middleware('can:access-admin')
+        ->name('admin.scoring.votes');
+    Route::livewire('admin/scoring/activity', 'pages::admin.scoring')
+        ->middleware('can:access-admin')
+        ->name('admin.scoring.activity');
 });
 
 require __DIR__.'/settings.php';

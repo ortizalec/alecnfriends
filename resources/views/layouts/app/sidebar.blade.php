@@ -31,24 +31,22 @@
                         <flux:sidebar.item icon="wrench-screwdriver" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
                             {{ __('Admin') }}
                         </flux:sidebar.item>
-                        <flux:sidebar.item icon="bolt" :href="route('admin.scoring')" :current="request()->routeIs('admin.scoring')" wire:navigate>
+                        <flux:sidebar.item icon="bolt" :href="route('admin.scoring')" :current="request()->routeIs('admin.scoring*')" wire:navigate>
                             {{ __('Live Scoring') }}
                         </flux:sidebar.item>
+                        @if (request()->routeIs('admin.scoring*'))
+                            <div class="ms-4 grid border-s border-emerald-400/20 ps-2">
+                                <flux:sidebar.item :href="route('admin.scoring')" :current="request()->routeIs('admin.scoring')" wire:navigate>{{ __('Actions') }}</flux:sidebar.item>
+                                <flux:sidebar.item :href="route('admin.scoring.results')" :current="request()->routeIs('admin.scoring.results')" wire:navigate>{{ __('Results') }}</flux:sidebar.item>
+                                <flux:sidebar.item :href="route('admin.scoring.votes')" :current="request()->routeIs('admin.scoring.votes')" wire:navigate>{{ __('Votes') }}</flux:sidebar.item>
+                                <flux:sidebar.item :href="route('admin.scoring.activity')" :current="request()->routeIs('admin.scoring.activity')" wire:navigate>{{ __('Activity') }}</flux:sidebar.item>
+                            </div>
+                        @endif
                     </flux:sidebar.group>
                 @endcan
             </flux:sidebar.nav>
 
             <flux:spacer />
-
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>

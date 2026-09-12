@@ -30,7 +30,9 @@ test('a user can save exactly five active cast members', function () {
     Livewire::test('pages::team')
         ->set('selectedCastMemberIds', $castMembers->modelKeys())
         ->call('save')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertSet('saved', true)
+        ->assertSeeText('Your team has been saved.');
 
     expect($user->castMembers()->pluck('cast_members.id')->all())
         ->toEqualCanonicalizing($castMembers->modelKeys());
@@ -124,6 +126,10 @@ test('my team activity includes only actions for selected cast members', functio
     CastMemberAction::factory()->for($otherMember)->create();
 
     $this->actingAs($user)->get(route('team.edit'))
+        ->assertSeeText('Cast member')
+        ->assertSeeText('Episode')
+        ->assertSeeText('Action')
+        ->assertSeeText('Points')
         ->assertSeeText('Team Player')
         ->assertDontSeeText('Other Player');
 });

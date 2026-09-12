@@ -26,7 +26,7 @@
                     <flux:navbar.item icon="wrench-screwdriver" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
                         {{ __('Admin') }}
                     </flux:navbar.item>
-                    <flux:navbar.item icon="bolt" :href="route('admin.scoring')" :current="request()->routeIs('admin.scoring')" wire:navigate>
+                    <flux:navbar.item icon="bolt" :href="route('admin.scoring')" :current="request()->routeIs('admin.scoring*')" wire:navigate>
                         {{ __('Live Scoring') }}
                     </flux:navbar.item>
                 @endcan
@@ -86,9 +86,17 @@
                         <flux:sidebar.item icon="wrench-screwdriver" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
                             {{ __('Admin') }}
                         </flux:sidebar.item>
-                        <flux:sidebar.item icon="bolt" :href="route('admin.scoring')" :current="request()->routeIs('admin.scoring')" wire:navigate>
+                        <flux:sidebar.item icon="bolt" :href="route('admin.scoring')" :current="request()->routeIs('admin.scoring*')" wire:navigate>
                             {{ __('Live Scoring') }}
                         </flux:sidebar.item>
+                        @if (request()->routeIs('admin.scoring*'))
+                            <div class="ms-4 grid border-s border-emerald-400/20 ps-2">
+                                <flux:sidebar.item :href="route('admin.scoring')" :current="request()->routeIs('admin.scoring')" wire:navigate>{{ __('Actions') }}</flux:sidebar.item>
+                                <flux:sidebar.item :href="route('admin.scoring.results')" :current="request()->routeIs('admin.scoring.results')" wire:navigate>{{ __('Results') }}</flux:sidebar.item>
+                                <flux:sidebar.item :href="route('admin.scoring.votes')" :current="request()->routeIs('admin.scoring.votes')" wire:navigate>{{ __('Votes') }}</flux:sidebar.item>
+                                <flux:sidebar.item :href="route('admin.scoring.activity')" :current="request()->routeIs('admin.scoring.activity')" wire:navigate>{{ __('Activity') }}</flux:sidebar.item>
+                            </div>
+                        @endif
                     @endcan
                 </flux:sidebar.group>
             </flux:sidebar.nav>

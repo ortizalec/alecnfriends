@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark scroll-smooth">
 <head>@include('partials.head', ['title' => __('How to play')])</head>
 <body class="min-h-screen bg-stone-50 font-sans text-zinc-950 antialiased dark:bg-zinc-950 dark:text-white">
 <div class="relative isolate overflow-hidden">

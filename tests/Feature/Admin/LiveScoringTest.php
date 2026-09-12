@@ -8,11 +8,16 @@ use App\Models\TeamChallengeScore;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('players cannot access live scoring', function () {
+test('players cannot access live scoring pages', function (string $routeName) {
     $this->actingAs(User::factory()->create())
-        ->get(route('admin.scoring'))
+        ->get(route($routeName))
         ->assertForbidden();
-});
+})->with([
+    'actions' => 'admin.scoring',
+    'results' => 'admin.scoring.results',
+    'votes' => 'admin.scoring.votes',
+    'activity' => 'admin.scoring.activity',
+]);
 
 test('players cannot record scoring actions directly', function () {
     $episode = Episode::factory()->create();
@@ -154,12 +159,35 @@ test('changing official results recalculates prediction points', function () {
         ->and($episode->breakfast_cast_member_id)->toBe($castMembers[3]->id);
 });
 
-test('live scoring renders a separate form for each official answer', function () {
+test('the live scoring results page renders a separate form for each official answer', function () {
     $episode = Episode::factory()->create();
 
     $this->actingAs(User::factory()->admin()->create())
-        ->get(route('admin.scoring'))
+        ->get(route('admin.scoring.results'))
         ->assertSee('wire:submit="saveMurderedResult"', false)
         ->assertSee('wire:submit="saveBanishedResult"', false)
         ->assertSee('wire:submit="saveBreakfastResult"', false);
 });
+
+test('the live scoring actions page presents the action workflow', function () {
+    Episode::factory()->create();
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.scoring'))
+        ->assertSeeText('Record cast action')
+        ->assertSee('wire:submit="recordAction"', false)
+        ->assertDontSee('wire:submit="saveMurderedResult"', false);
+});
+
+test('each additional live scoring page presents only its focused workflow', function (string $routeName, string $visibleText) {
+    Episode::factory()->create();
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route($routeName))
+        ->assertSeeText($visibleText)
+        ->assertDontSee('wire:submit="recordAction"', false);
+})->with([
+    'results' => ['admin.scoring.results', 'Official prediction answers'],
+    'votes' => ['admin.scoring.votes', 'Round-table votes'],
+    'activity' => ['admin.scoring.activity', 'Episode action log'],
+]);

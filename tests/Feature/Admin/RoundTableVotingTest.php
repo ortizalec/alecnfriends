@@ -14,6 +14,7 @@ test('players cannot record round table votes', function () {
     $this->actingAs(User::factory()->create());
 
     Livewire::test('pages::admin.scoring')
+        ->set('section', 'votes')
         ->set('episodeId', $episode->id)
         ->set('voterCastMemberId', $castMembers[0]->id)
         ->set('voteTargetCastMemberId', $castMembers[1]->id)
@@ -90,6 +91,7 @@ test('a voter disappears from the voter carousel after submitting a ballot', fun
     $this->actingAs(User::factory()->admin()->create());
 
     Livewire::test('pages::admin.scoring')
+        ->set('section', 'votes')
         ->set('episodeId', $episode->id)
         ->assertSeeHtml('vote-voter-'.$voter->id)
         ->set('voterCastMemberId', $voter->id)

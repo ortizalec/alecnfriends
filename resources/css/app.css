@@ -23,16 +23,16 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
-    --color-accent-foreground: var(--color-white);
+    --color-accent: var(--color-emerald-400);
+    --color-accent-content: var(--color-emerald-300);
+    --color-accent-foreground: #04110b;
 }
 
 @layer theme {
     .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
+        --color-accent: var(--color-emerald-400);
+        --color-accent-content: var(--color-emerald-300);
+        --color-accent-foreground: #04110b;
     }
 }
 
@@ -44,6 +44,140 @@
     ::backdrop,
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
+    }
+
+    html {
+        color-scheme: dark;
+        background: #050806;
+    }
+
+    body {
+        color: var(--color-zinc-100) !important;
+        background-color: #070b08 !important;
+        background-image:
+            linear-gradient(rgb(52 211 153 / 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgb(52 211 153 / 0.02) 1px, transparent 1px) !important;
+        background-size: 32px 32px !important;
+    }
+
+    ::selection {
+        color: #04110b;
+        background: var(--color-emerald-400);
+    }
+}
+
+@layer components {
+    [data-flux-main] {
+        padding: 1.25rem !important;
+        background: transparent;
+    }
+
+    [data-flux-main] > div {
+        gap: 1.75rem;
+    }
+
+    [data-flux-main] section {
+        gap: 0.75rem;
+    }
+
+    [data-flux-sidebar],
+    [data-flux-header] {
+        border-color: rgb(52 211 153 / 0.14) !important;
+        background: rgb(7 11 8 / 0.96) !important;
+    }
+
+    [data-flux-sidebar-item],
+    [data-flux-navlist-item],
+    [data-flux-navbar-item],
+    [data-flux-button],
+    [data-flux-control],
+    [data-flux-badge],
+    [data-flux-profile],
+    [data-flux-sidebar-profile] {
+        border-radius: 0 !important;
+    }
+
+    [data-flux-sidebar-item][data-active],
+    [data-flux-navlist-item][data-active],
+    [data-flux-navbar-item][data-active] {
+        color: var(--color-emerald-300) !important;
+        background: rgb(52 211 153 / 0.08) !important;
+        box-shadow: inset 2px 0 var(--color-emerald-400);
+    }
+
+    [data-flux-card] {
+        border: 0 !important;
+        border-bottom: 1px solid rgb(255 255 255 / 0.06) !important;
+        border-radius: 0 !important;
+        padding: 0 0 1rem !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    [data-flux-callout] {
+        border: 0 !important;
+        border-left: 2px solid var(--color-emerald-400) !important;
+        border-radius: 0 !important;
+        padding: 0.75rem 1rem !important;
+        background: rgb(52 211 153 / 0.06) !important;
+        box-shadow: none !important;
+    }
+
+    [data-flux-modal],
+    [data-flux-menu] {
+        border-radius: 0 !important;
+        border-color: rgb(63 78 68 / 0.9) !important;
+        background-color: rgb(12 18 14 / 0.98) !important;
+    }
+
+    [data-flux-button] {
+        font-weight: 750;
+        letter-spacing: 0.015em;
+    }
+
+    [data-flux-control] {
+        border-color: rgb(63 78 68 / 0.95) !important;
+        background-color: #0b110d !important;
+    }
+
+    [data-flux-heading] {
+        letter-spacing: -0.025em;
+    }
+
+    [data-flux-heading][data-size="xl"] {
+        text-transform: uppercase;
+        letter-spacing: 0.035em;
+    }
+
+    [data-flux-badge] {
+        font-variant-numeric: tabular-nums;
+        font-weight: 750;
+    }
+
+    @media (min-width: 640px) {
+        [data-flux-main] {
+            padding: 1.75rem !important;
+        }
+    }
+}
+
+@layer utilities {
+    .rounded-md,
+    .rounded-lg,
+    .rounded-xl,
+    .rounded-2xl,
+    .rounded-3xl,
+    .rounded-full {
+        border-radius: 0;
+    }
+
+    .dark .border-zinc-700,
+    .dark .divide-zinc-700 > :not(:last-child) {
+        border-color: rgb(255 255 255 / 0.07);
+    }
+
+    .dark .bg-zinc-900 {
+        background-color: rgb(12 18 14 / 0.68);
     }
 }
 

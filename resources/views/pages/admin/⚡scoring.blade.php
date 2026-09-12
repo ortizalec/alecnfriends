@@ -20,6 +20,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Live Scoring')] class extends Component {
+    public string $section = 'actions';
     public ?int $episodeId = null;
     public ?int $castMemberId = null;
     public string $actionType = 'shield';
@@ -31,6 +32,12 @@ new #[Title('Live Scoring')] class extends Component {
 
     public function mount(): void
     {
+        $this->section = match (true) {
+            request()->routeIs('admin.scoring.results') => 'results',
+            request()->routeIs('admin.scoring.votes') => 'votes',
+            request()->routeIs('admin.scoring.activity') => 'activity',
+            default => 'actions',
+        };
         $this->episodeId = Episode::query()->latest('number')->value('id');
         $this->loadEpisodeResults();
     }
@@ -307,7 +314,20 @@ new #[Title('Live Scoring')] class extends Component {
             @foreach ($this->episodes as $episode)<flux:select.option wire:key="score-episode-{{ $episode->id }}" :value="$episode->id">{{ __('Episode :number', ['number' => $episode->number]) }} — {{ $episode->title }}</flux:select.option>@endforeach
         </flux:select>
 
-        <div class="grid gap-6 lg:grid-cols-2">
+        <nav aria-label="{{ __('Live scoring sections') }}" class="flex gap-1 overflow-x-auto border-b border-white/10">
+            @foreach ([
+                'admin.scoring' => __('Actions'),
+                'admin.scoring.results' => __('Results'),
+                'admin.scoring.votes' => __('Votes'),
+                'admin.scoring.activity' => __('Activity'),
+            ] as $routeName => $label)
+                <a href="{{ route($routeName) }}" wire:navigate class="shrink-0 border-b-2 px-3 py-2 text-sm font-semibold transition {{ request()->routeIs($routeName) ? 'border-emerald-400 text-emerald-300' : 'border-transparent text-zinc-500 hover:text-zinc-200' }}">
+                    {{ $label }}
+                </a>
+            @endforeach
+        </nav>
+
+        @if ($section === 'actions')
             <flux:card class="flex flex-col gap-5">
                 <div><flux:heading size="lg">{{ __('Record cast action') }}</flux:heading><flux:text>{{ __('Points are added immediately to every fantasy team containing that cast member.') }}</flux:text></div>
                 <form wire:submit="recordAction" class="flex flex-col gap-4">
@@ -318,7 +338,9 @@ new #[Title('Live Scoring')] class extends Component {
                     <flux:button type="submit" variant="primary">{{ __('Record action') }}</flux:button>
                 </form>
             </flux:card>
+        @endif
 
+        @if ($section === 'results')
             <flux:card class="flex flex-col gap-5">
                 <div><flux:heading size="lg">{{ __('Official prediction answers') }}</flux:heading><flux:text>{{ __('Save each answer as it happens. The round closes with the first result, and points are recalculated after every answer.') }}</flux:text></div>
 
@@ -340,8 +362,9 @@ new #[Title('Live Scoring')] class extends Component {
                     <div class="flex justify-end"><flux:button type="submit" variant="primary" wire:confirm="{{ __('Save the breakfast result and recalculate prediction points?') }}">{{ __('Save breakfast answer') }}</flux:button></div>
                 </form>
             </flux:card>
-        </div>
+        @endif
 
+        @if ($section === 'votes')
         <flux:card class="flex min-w-0 max-w-full flex-col gap-5 overflow-hidden">
             <div><flux:heading size="lg">{{ __('Round-table votes') }}</flux:heading><flux:text>{{ __('Enter each ballot. Correct faithful votes, lone votes, and votes received by surviving traitors are scored automatically.') }}</flux:text></div>
             <form wire:submit="saveVote" class="flex min-w-0 max-w-full flex-col gap-5 overflow-hidden">
@@ -364,7 +387,9 @@ new #[Title('Live Scoring')] class extends Component {
                 @endforelse
             </div>
         </flux:card>
+        @endif
 
+        @if ($section === 'activity')
         <section class="flex flex-col gap-3">
             <flux:heading size="lg">{{ __('Episode action log') }}</flux:heading>
             @forelse ($this->recentActions as $action)
@@ -376,5 +401,6 @@ new #[Title('Live Scoring')] class extends Component {
                 <flux:text>{{ __('No actions recorded for this episode.') }}</flux:text>
             @endforelse
         </section>
+        @endif
     @endif
 </div>
