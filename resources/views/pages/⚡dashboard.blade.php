@@ -17,7 +17,6 @@ new #[Title('Leaderboard')] class extends Component {
     public function leaderboard(): Collection
     {
         return User::query()
-            ->where('is_admin', false)
             ->with('castMembers')
             ->withSum('castMembers', 'points')
             ->withSum('predictions', 'points')

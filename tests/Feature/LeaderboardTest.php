@@ -19,6 +19,15 @@ test('leaderboard ranks player teams by their combined cast points', function ()
         ->assertSeeInOrder(['First Place', '50', 'Second Place', '25']);
 });
 
+test('leaderboard includes an admin who is also playing', function () {
+    $admin = User::factory()->admin()->create(['name' => 'Playing Admin']);
+    $admin->castMembers()->attach(CastMember::factory()->count(5)->create(['points' => 4]));
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertSeeInOrder(['Playing Admin', '20']);
+});
+
 test('leaderboard table shows player names team tags and total points without score breakdowns', function () {
     $user = User::factory()->create(['name' => 'Image Player']);
     $castMember = CastMember::factory()->create([
