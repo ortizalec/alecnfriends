@@ -52,6 +52,12 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(Prediction::class);
     }
 
+    /** @return HasMany<TraitorPrediction, $this> */
+    public function traitorPredictions(): HasMany
+    {
+        return $this->hasMany(TraitorPrediction::class);
+    }
+
     /** @return HasMany<PollResponse, $this> */
     public function pollResponses(): HasMany
     {

@@ -3,6 +3,7 @@
 use App\Models\CastMemberAction;
 use App\Models\Episode;
 use App\Models\Poll;
+use App\Models\TraitorPredictionRound;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -20,8 +21,9 @@ new #[Title('Leaderboard')] class extends Component {
             ->with('castMembers')
             ->withSum('castMembers', 'points')
             ->withSum('predictions', 'points')
+            ->withSum('traitorPredictions', 'points')
             ->withSum('teamChallengeScores', 'points')
-            ->orderByRaw('COALESCE(cast_members_sum_points, 0) + COALESCE(predictions_sum_points, 0) + COALESCE(team_challenge_scores_sum_points, 0) DESC')
+            ->orderByRaw('COALESCE(cast_members_sum_points, 0) + COALESCE(predictions_sum_points, 0) + COALESCE(traitor_predictions_sum_points, 0) + COALESCE(team_challenge_scores_sum_points, 0) DESC')
             ->orderBy('name')
             ->get();
     }
@@ -34,6 +36,15 @@ new #[Title('Leaderboard')] class extends Component {
             ->latest('number')->first();
 
         return $episode && ! $episode->predictions()->where('user_id', Auth::id())->exists();
+    }
+
+    #[Computed]
+    public function hasPendingTraitorPrediction(): bool
+    {
+        return TraitorPredictionRound::query()
+            ->where('is_open', true)
+            ->whereDoesntHave('predictions', fn ($query) => $query->where('user_id', Auth::id()))
+            ->exists();
     }
 
     #[Computed]
@@ -64,6 +75,11 @@ new #[Title('Leaderboard')] class extends Component {
             <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><span>{{ __('Complete it before the prediction window closes.') }}</span><flux:button :href="route('predictions.edit')" wire:navigate size="sm" variant="primary">{{ __('Make predictions') }}</flux:button></div>
         </flux:callout>
     @endif
+    @if ($this->hasPendingTraitorPrediction)
+        <flux:callout variant="warning" icon="eye" heading="{{ __('Who do you think the traitors are?') }}">
+            <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><span>{{ __('Choose your three traitor picks before the opening prediction closes.') }}</span><flux:button :href="route('predictions.edit')" wire:navigate size="sm" variant="primary">{{ __('Pick the traitors') }}</flux:button></div>
+        </flux:callout>
+    @endif
     @if ($this->pendingSurveyCount > 0)
         <flux:callout variant="warning" icon="clipboard-document-list" heading="{{ trans_choice(':count survey needs your response|:count surveys need your response', $this->pendingSurveyCount, ['count' => $this->pendingSurveyCount]) }}">
             <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><span>{{ __('Submit your choices before the surveys close.') }}</span><flux:button :href="route('surveys.index')" wire:navigate size="sm" variant="primary">{{ __('Complete surveys') }}</flux:button></div>
@@ -90,7 +106,7 @@ new #[Title('Leaderboard')] class extends Component {
                                 @endforeach
                             </div>
                         </td>
-                        <td class="px-4 py-4 text-right text-xl font-bold">{{ ($player->cast_members_sum_points ?? 0) + ($player->predictions_sum_points ?? 0) + ($player->team_challenge_scores_sum_points ?? 0) }}</td>
+                        <td class="px-4 py-4 text-right text-xl font-bold">{{ ($player->cast_members_sum_points ?? 0) + ($player->predictions_sum_points ?? 0) + ($player->traitor_predictions_sum_points ?? 0) + ($player->team_challenge_scores_sum_points ?? 0) }}</td>
                     </tr>
                 @empty
                     <tr>

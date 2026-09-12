@@ -78,7 +78,7 @@ test('challenge money awards one point per fantasy team instead of per cast memb
         ->and(TeamChallengeScore::query()->whereBelongsTo($player)->sum('points'))->toBe(1);
 });
 
-test('official results award prediction points and eliminate cast members', function () {
+test('official results can be saved separately as they happen', function () {
     $admin = User::factory()->admin()->create();
     $user = User::factory()->create();
     $episode = Episode::factory()->create(['predictions_are_open' => true]);
@@ -95,22 +95,43 @@ test('official results award prediction points and eliminate cast members', func
     Livewire::test('pages::admin.scoring')
         ->set('episodeId', $episode->id)
         ->set('murderedCastMemberId', $castMembers[0]->id)
-        ->set('banishedCastMemberId', $castMembers[1]->id)
-        ->set('breakfastCastMemberId', $castMembers[2]->id)
-        ->call('saveResults')
+        ->call('saveMurderedResult')
         ->assertHasNoErrors();
 
-    expect($prediction->refresh()->points)->toBe(4)
+    expect($prediction->refresh()->points)->toBe(1)
         ->and($episode->refresh()->predictions_are_open)->toBeFalse()
         ->and($castMembers[0]->refresh()->status->value)->toBe('murdered')
-        ->and($castMembers[1]->refresh()->status->value)->toBe('banished');
+        ->and($episode->banished_cast_member_id)->toBeNull()
+        ->and($episode->breakfast_cast_member_id)->toBeNull();
+
+    Livewire::test('pages::admin.scoring')
+        ->set('episodeId', $episode->id)
+        ->set('banishedCastMemberId', $castMembers[1]->id)
+        ->call('saveBanishedResult')
+        ->assertHasNoErrors();
+
+    expect($prediction->refresh()->points)->toBe(2)
+        ->and($castMembers[1]->refresh()->status->value)->toBe('banished')
+        ->and($episode->refresh()->breakfast_cast_member_id)->toBeNull();
+
+    Livewire::test('pages::admin.scoring')
+        ->set('episodeId', $episode->id)
+        ->set('breakfastCastMemberId', $castMembers[2]->id)
+        ->call('saveBreakfastResult')
+        ->assertHasNoErrors();
+
+    expect($prediction->refresh()->points)->toBe(4);
 });
 
 test('changing official results recalculates prediction points', function () {
     $admin = User::factory()->admin()->create();
     $user = User::factory()->create();
-    $episode = Episode::factory()->create();
     $castMembers = CastMember::factory()->count(4)->create();
+    $episode = Episode::factory()->create([
+        'murdered_cast_member_id' => $castMembers[0]->id,
+        'banished_cast_member_id' => $castMembers[1]->id,
+        'breakfast_cast_member_id' => $castMembers[2]->id,
+    ]);
     $prediction = Prediction::factory()->create([
         'episode_id' => $episode->id,
         'user_id' => $user->id,
@@ -123,11 +144,22 @@ test('changing official results recalculates prediction points', function () {
 
     Livewire::test('pages::admin.scoring')
         ->set('episodeId', $episode->id)
-        ->set('murderedCastMemberId', $castMembers[3]->id)
-        ->set('banishedCastMemberId', $castMembers[3]->id)
         ->set('breakfastCastMemberId', $castMembers[3]->id)
-        ->call('saveResults')
+        ->call('saveBreakfastResult')
         ->assertHasNoErrors();
 
-    expect($prediction->refresh()->points)->toBe(0);
+    expect($prediction->refresh()->points)->toBe(2)
+        ->and($episode->refresh()->murdered_cast_member_id)->toBe($castMembers[0]->id)
+        ->and($episode->banished_cast_member_id)->toBe($castMembers[1]->id)
+        ->and($episode->breakfast_cast_member_id)->toBe($castMembers[3]->id);
+});
+
+test('live scoring renders a separate form for each official answer', function () {
+    $episode = Episode::factory()->create();
+
+    $this->actingAs(User::factory()->admin()->create())
+        ->get(route('admin.scoring'))
+        ->assertSee('wire:submit="saveMurderedResult"', false)
+        ->assertSee('wire:submit="saveBanishedResult"', false)
+        ->assertSee('wire:submit="saveBreakfastResult"', false);
 });

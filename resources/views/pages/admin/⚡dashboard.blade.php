@@ -1,15 +1,18 @@
 <?php
 
 use App\Actions\RecalculateVoteScoring;
+use App\Actions\RecalculateTraitorPredictionScoring;
 use App\Models\CastMember;
 use App\Models\Episode;
 use App\Models\LeagueSetting;
 use App\Models\Poll;
+use App\Models\TraitorPredictionRound;
 use App\Models\User;
 use App\CastMemberStatus;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -38,6 +41,17 @@ new #[Title('Admin')] class extends Component {
     public int $episodeNumber = 1;
     public string $episodeTitle = '';
     public string $predictionClosesAt = '';
+    public ?int $firstCorrectTraitorCastMemberId = null;
+    public ?int $secondCorrectTraitorCastMemberId = null;
+    public ?int $thirdCorrectTraitorCastMemberId = null;
+
+    public function mount(): void
+    {
+        $round = TraitorPredictionRound::query()->first();
+        $this->firstCorrectTraitorCastMemberId = $round?->first_traitor_cast_member_id;
+        $this->secondCorrectTraitorCastMemberId = $round?->second_traitor_cast_member_id;
+        $this->thirdCorrectTraitorCastMemberId = $round?->third_traitor_cast_member_id;
+    }
 
     /** @return Collection<int, CastMember> */
     #[Computed]
@@ -69,6 +83,12 @@ new #[Title('Admin')] class extends Component {
     public function episodes(): Collection
     {
         return Episode::query()->latest('number')->get();
+    }
+
+    #[Computed]
+    public function traitorPredictionRound(): ?TraitorPredictionRound
+    {
+        return TraitorPredictionRound::query()->withCount('predictions')->first();
     }
 
     #[Computed]
@@ -225,6 +245,55 @@ new #[Title('Admin')] class extends Component {
         Flux::toast(variant: 'success', text: __('Predictions launched.'));
     }
 
+    public function launchTraitorPrediction(): void
+    {
+        Gate::authorize('access-admin');
+        abort_if(TraitorPredictionRound::query()->exists(), 422, 'The one-off traitor prediction has already been launched.');
+
+        TraitorPredictionRound::query()->create(['is_open' => true]);
+
+        unset($this->traitorPredictionRound);
+        Flux::toast(variant: 'success', text: __('Traitor prediction launched.'));
+    }
+
+    public function saveTraitorPredictionResults(
+        RecalculateTraitorPredictionScoring $recalculateTraitorPredictionScoring,
+        RecalculateVoteScoring $recalculateVoteScoring,
+    ): void {
+        Gate::authorize('access-admin');
+
+        $castMemberExists = Rule::exists(CastMember::class, 'id');
+        $validated = $this->validate([
+            'firstCorrectTraitorCastMemberId' => ['required', 'integer', $castMemberExists],
+            'secondCorrectTraitorCastMemberId' => ['required', 'integer', 'different:firstCorrectTraitorCastMemberId', $castMemberExists],
+            'thirdCorrectTraitorCastMemberId' => ['required', 'integer', 'different:firstCorrectTraitorCastMemberId', 'different:secondCorrectTraitorCastMemberId', $castMemberExists],
+        ]);
+
+        DB::transaction(function () use ($validated, $recalculateTraitorPredictionScoring, $recalculateVoteScoring): void {
+            $round = TraitorPredictionRound::query()->lockForUpdate()->firstOrFail();
+            $round->update([
+                'is_open' => false,
+                'first_traitor_cast_member_id' => $validated['firstCorrectTraitorCastMemberId'],
+                'second_traitor_cast_member_id' => $validated['secondCorrectTraitorCastMemberId'],
+                'third_traitor_cast_member_id' => $validated['thirdCorrectTraitorCastMemberId'],
+                'revealed_at' => now(),
+            ]);
+
+            CastMember::query()->update(['is_traitor' => false]);
+            CastMember::query()->whereKey([
+                $validated['firstCorrectTraitorCastMemberId'],
+                $validated['secondCorrectTraitorCastMemberId'],
+                $validated['thirdCorrectTraitorCastMemberId'],
+            ])->update(['is_traitor' => true]);
+
+            $recalculateTraitorPredictionScoring($round);
+            Episode::query()->whereHas('roundTableVotes')->each($recalculateVoteScoring);
+        });
+
+        unset($this->traitorPredictionRound, $this->castMembers);
+        Flux::toast(variant: 'success', text: __('Traitor answers saved and predictions scored.'));
+    }
+
     public function clearTeam(int $userId): void
     {
         Gate::authorize('access-admin');
@@ -326,6 +395,23 @@ new #[Title('Admin')] class extends Component {
     </section>
 
     <section class="grid gap-6 lg:grid-cols-2">
+        <flux:card class="flex flex-col gap-5">
+            <div><flux:heading size="lg">{{ __('Opening traitor prediction') }}</flux:heading><flux:text>{{ __('Players make one set of three traitor picks before the season begins. Each correct pick is worth 1 point.') }}</flux:text></div>
+            @if (! $this->traitorPredictionRound)
+                <div class="flex justify-end"><flux:button wire:click="launchTraitorPrediction" variant="primary" wire:confirm="{{ __('Launch the one-off traitor prediction now?') }}">{{ __('Launch traitor prediction') }}</flux:button></div>
+            @elseif ($this->traitorPredictionRound->is_open)
+                <form wire:submit="saveTraitorPredictionResults" class="flex flex-col gap-4">
+                    <div class="flex items-center justify-between gap-3"><flux:badge color="green">{{ __('Open') }}</flux:badge><flux:text size="sm">{{ trans_choice(':count submission|:count submissions', $this->traitorPredictionRound->predictions_count, ['count' => $this->traitorPredictionRound->predictions_count]) }}</flux:text></div>
+                    <x-cast-member-picker :cast-members="$this->castMembers" model="firstCorrectTraitorCastMemberId" :selected="$firstCorrectTraitorCastMemberId" :label="__('First correct traitor')" key-prefix="correct-traitor-first" />
+                    <x-cast-member-picker :cast-members="$this->castMembers" model="secondCorrectTraitorCastMemberId" :selected="$secondCorrectTraitorCastMemberId" :label="__('Second correct traitor')" key-prefix="correct-traitor-second" />
+                    <x-cast-member-picker :cast-members="$this->castMembers" model="thirdCorrectTraitorCastMemberId" :selected="$thirdCorrectTraitorCastMemberId" :label="__('Third correct traitor')" key-prefix="correct-traitor-third" />
+                    <div class="flex justify-end"><flux:button type="submit" variant="primary" wire:confirm="{{ __('Reveal these traitors, close predictions, and award points?') }}">{{ __('Reveal answers and score') }}</flux:button></div>
+                </form>
+            @else
+                <div class="flex items-center justify-between gap-3"><flux:badge color="zinc">{{ __('Revealed') }}</flux:badge><flux:text size="sm">{{ trans_choice(':count submission scored|:count submissions scored', $this->traitorPredictionRound->predictions_count, ['count' => $this->traitorPredictionRound->predictions_count]) }}</flux:text></div>
+            @endif
+        </flux:card>
+
         <flux:card class="flex flex-col gap-5">
             <div><flux:heading size="lg">{{ __('Create audience poll') }}</flux:heading><flux:text>{{ __('Poll answers use the currently active cast members.') }}</flux:text></div>
             <form wire:submit="savePoll" class="flex flex-col gap-4">

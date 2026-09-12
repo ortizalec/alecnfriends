@@ -218,32 +218,70 @@ new #[Title('Live Scoring')] class extends Component {
         Flux::toast(variant: 'success', text: __('Action removed and scores corrected.'));
     }
 
-    public function saveResults(ScoreEpisodePredictions $scorePredictions, RecalculateVoteScoring $recalculateVoteScoring): void
+    public function saveMurderedResult(ScoreEpisodePredictions $scorePredictions): void
     {
         Gate::authorize('access-admin');
 
         $validated = $this->validate([
             'episodeId' => ['required', 'integer', Rule::exists(Episode::class, 'id')],
             'murderedCastMemberId' => ['required', 'integer', Rule::exists(CastMember::class, 'id')],
+        ]);
+
+        DB::transaction(function () use ($validated, $scorePredictions): void {
+            $episode = Episode::query()->findOrFail($validated['episodeId']);
+            $episode->update([
+                'murdered_cast_member_id' => $validated['murderedCastMemberId'],
+                'predictions_are_open' => false,
+            ]);
+            CastMember::query()->whereKey($validated['murderedCastMemberId'])->update(['status' => CastMemberStatus::Murdered, 'is_active' => false]);
+            $scorePredictions($episode);
+        });
+
+        Flux::toast(variant: 'success', text: __('Murdered result saved and prediction points recalculated.'));
+    }
+
+    public function saveBanishedResult(ScoreEpisodePredictions $scorePredictions, RecalculateVoteScoring $recalculateVoteScoring): void
+    {
+        Gate::authorize('access-admin');
+
+        $validated = $this->validate([
+            'episodeId' => ['required', 'integer', Rule::exists(Episode::class, 'id')],
             'banishedCastMemberId' => ['required', 'integer', Rule::exists(CastMember::class, 'id')],
-            'breakfastCastMemberId' => ['required', 'integer', Rule::exists(CastMember::class, 'id')],
         ]);
 
         DB::transaction(function () use ($validated, $scorePredictions, $recalculateVoteScoring): void {
             $episode = Episode::query()->findOrFail($validated['episodeId']);
             $episode->update([
-                'murdered_cast_member_id' => $validated['murderedCastMemberId'],
                 'banished_cast_member_id' => $validated['banishedCastMemberId'],
-                'breakfast_cast_member_id' => $validated['breakfastCastMemberId'],
                 'predictions_are_open' => false,
             ]);
-            CastMember::query()->whereKey($validated['murderedCastMemberId'])->update(['status' => CastMemberStatus::Murdered, 'is_active' => false]);
             CastMember::query()->whereKey($validated['banishedCastMemberId'])->update(['status' => CastMemberStatus::Banished, 'is_active' => false]);
             $scorePredictions($episode);
             $recalculateVoteScoring($episode);
         });
 
-        Flux::toast(variant: 'success', text: __('Results saved and prediction points awarded.'));
+        Flux::toast(variant: 'success', text: __('Banished result saved and prediction points recalculated.'));
+    }
+
+    public function saveBreakfastResult(ScoreEpisodePredictions $scorePredictions): void
+    {
+        Gate::authorize('access-admin');
+
+        $validated = $this->validate([
+            'episodeId' => ['required', 'integer', Rule::exists(Episode::class, 'id')],
+            'breakfastCastMemberId' => ['required', 'integer', Rule::exists(CastMember::class, 'id')],
+        ]);
+
+        DB::transaction(function () use ($validated, $scorePredictions): void {
+            $episode = Episode::query()->findOrFail($validated['episodeId']);
+            $episode->update([
+                'breakfast_cast_member_id' => $validated['breakfastCastMemberId'],
+                'predictions_are_open' => false,
+            ]);
+            $scorePredictions($episode);
+        });
+
+        Flux::toast(variant: 'success', text: __('Breakfast result saved and prediction points recalculated.'));
     }
 
     private function loadEpisodeResults(): void
@@ -282,12 +320,24 @@ new #[Title('Live Scoring')] class extends Component {
             </flux:card>
 
             <flux:card class="flex flex-col gap-5">
-                <div><flux:heading size="lg">{{ __('Official prediction answers') }}</flux:heading><flux:text>{{ __('Saving closes this round and awards 1 point each for murder and banishment, plus 2 for breakfast.') }}</flux:text></div>
-                <form wire:submit="saveResults" class="flex flex-col gap-4">
+                <div><flux:heading size="lg">{{ __('Official prediction answers') }}</flux:heading><flux:text>{{ __('Save each answer as it happens. The round closes with the first result, and points are recalculated after every answer.') }}</flux:text></div>
+
+                <form wire:submit="saveMurderedResult" class="flex flex-col gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-700">
+                    <flux:heading>{{ __('Murdered') }}</flux:heading>
                     <x-cast-member-picker :cast-members="$this->castMembers" model="murderedCastMemberId" :selected="$murderedCastMemberId" :label="__('Murdered')" key-prefix="result-murdered" />
+                    <div class="flex justify-end"><flux:button type="submit" variant="primary" wire:confirm="{{ __('Save the murdered result and recalculate prediction points?') }}">{{ __('Save murdered answer') }}</flux:button></div>
+                </form>
+
+                <form wire:submit="saveBanishedResult" class="flex flex-col gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-700">
+                    <flux:heading>{{ __('Banished') }}</flux:heading>
                     <x-cast-member-picker :cast-members="$this->castMembers" model="banishedCastMemberId" :selected="$banishedCastMemberId" :label="__('Banished')" key-prefix="result-banished" />
+                    <div class="flex justify-end"><flux:button type="submit" variant="primary" wire:confirm="{{ __('Save the banished result and recalculate prediction points?') }}">{{ __('Save banished answer') }}</flux:button></div>
+                </form>
+
+                <form wire:submit="saveBreakfastResult" class="flex flex-col gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-700">
+                    <flux:heading>{{ __('First out for breakfast') }}</flux:heading>
                     <x-cast-member-picker :cast-members="$this->castMembers" model="breakfastCastMemberId" :selected="$breakfastCastMemberId" :label="__('First out for breakfast')" key-prefix="result-breakfast" />
-                    <flux:button type="submit" variant="primary" wire:confirm="{{ __('Publish these results and award prediction points?') }}">{{ __('Save results and score predictions') }}</flux:button>
+                    <div class="flex justify-end"><flux:button type="submit" variant="primary" wire:confirm="{{ __('Save the breakfast result and recalculate prediction points?') }}">{{ __('Save breakfast answer') }}</flux:button></div>
                 </form>
             </flux:card>
         </div>
